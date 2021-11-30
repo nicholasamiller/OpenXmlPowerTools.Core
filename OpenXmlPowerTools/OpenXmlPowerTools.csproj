@@ -1,7 +1,50 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>net45;net46;netstandard2.0;net6.0</TargetFrameworks>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Authors>Microsoft, Eric White, Lionel Vallet</Authors>
+		<RepositoryUrl>https://github.com/LionelVallet/Open-Xml-PowerTools</RepositoryUrl>
+		<PackageId>OpenXmlPowerTools.NetStandard</PackageId>
+		<PackageTags>OpenXmlPowerTools, NET, Standard, OpenXML, Power, Tools</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/LionelVallet/Open-Xml-PowerTools</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<Description>
+			Based on maintainer EricWhite's vNext fork, includes .NET 6.0 and .NET Standard 2.0 build target for use in cross-platform scenarios.
+
+			The Open XML PowerTools provides guidance and example code for programming with Open XML Documents (DOCX, XLSX, and PPTX). It is based on, and extends the functionality of the Open XML SDK.
+
+			It supports scenarios such as:
+			•Splitting DOCX/PPTX files into multiple files.
+			•Combining multiple DOCX/PPTX files into a single file.
+			•Populating content in template DOCX files with data from XML.
+			•High-fidelity conversion of DOCX to HTML.
+			•Searching and replacing content in DOCX/PPTX using regular expressions.
+			•Managing tracked-revisions, including detecting tracked revisions, and accepting tracked revisions.
+			•Updating Charts in DOCX/PPTX files, including updating cached data, as well as the embedded XLSX.
+			•Retrieving metrics from DOCX files, including the hierarchy of styles used, the languages used, and the fonts used.
+			•Writing XLSX files using far simpler code than directly writing the markup, including a streaming approach that enables writing XLSX files with millions of rows.
+		</Description>
+		<Version>4.6.0</Version>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
+		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net46|AnyCPU'">
+		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
+		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
+		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="DocumentFormat.OpenXml" Version="2.14.0" />
