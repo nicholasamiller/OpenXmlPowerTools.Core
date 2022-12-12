@@ -40,10 +40,10 @@ jobs:
          6.0.x
          7.0.x
     - name: Build
-      run: dotnet build $MAIN_PROJECT --configuration $BUILD_CONFIG -p:Version=$BUILD_VERSION
+      run: dotnet build $SOLUTION --configuration $BUILD_CONFIG -p:Version=$BUILD_VERSION
 
     - name: Run tests
-      run: dotnet test $SOLUTION --no-restore --configuration $BUILD_CONFIG --verbosity minimal
+      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity minimal
       
     - name: Publish
       if: startsWith(github.ref, 'refs/heads/release')
