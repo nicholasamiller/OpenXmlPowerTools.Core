@@ -1,5 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
+		<NoWarn>CA1416</NoWarn>
 		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Authors>Microsoft, Eric White, Lionel Vallet, Alexander Solovey</Authors>

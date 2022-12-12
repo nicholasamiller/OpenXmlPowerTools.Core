@@ -285,7 +285,7 @@ namespace OxPt
                     if (pageTitle == null)
                         pageTitle = sourceDocx.FullName;
 
-                    WmlToHtmlConverterSettings settings = new WmlToHtmlConverterSettings()
+                    WmlToHtmlConverterSettings settings = new ()
                     {
                         PageTitle = pageTitle,
                         FabricateCssClasses = false,
