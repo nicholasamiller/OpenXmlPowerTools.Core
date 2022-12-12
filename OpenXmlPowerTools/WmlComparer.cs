@@ -5,18 +5,12 @@
 // TODO wDocConsolidated.MainDocumentPart.FootnotesPart.PutXDocument();
 // TODO Take care of this after the conference
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using DocumentFormat.OpenXml.Packaging;
+using System.Drawing;
 using System.Globalization;
-using System.IO;
 using System.IO.Packaging;
 using System.Text;
 using System.Xml.Linq;
-using DocumentFormat.OpenXml.Packaging;
-using System.Drawing;
-using System.Security.Cryptography;
-using OpenXmlPowerTools;
 
 // It is possible to optimize DescendantContentAtoms
 
@@ -51,17 +45,17 @@ namespace OpenXmlPowerTools
 {
     public class WmlComparerSettings
     {
-        public char[] WordSeparators;
-        public string AuthorForRevisions = "Open-Xml-PowerTools";
-        public string DateTimeForRevisions = DateTime.Now.ToString("o");
-        public double DetailThreshold = 0.15;
-        public bool CaseInsensitive = false;
-        public bool ConflateBreakingAndNonbreakingSpaces = true;
-        public CultureInfo CultureInfo = null;
-        public Action<string> LogCallback = null;
-        public int StartingIdForFootnotesEndnotes = 1;
+        public char[] WordSeparators { get; set; }
+        public string AuthorForRevisions { get; set; } = "OpenXmlPowerTools";
+        public string DateTimeForRevisions { get; set; } = DateTime.Now.ToString("o");
+        public double DetailThreshold { get; set; } = 0.15;
+        public bool CaseInsensitive { get; set; }
+        public bool ConflateBreakingAndNonbreakingSpaces { get; set; } = true;
+        public CultureInfo CultureInfo { get; set; }
+        public Action<string> LogCallback { get; set; }
+        public int StartingIdForFootnotesEndnotes { get; set; } = 1;
 
-        public DirectoryInfo DebugTempFileDi;
+        public DirectoryInfo DebugTempFileDi { get; set; }
 
         public WmlComparerSettings()
         {
@@ -72,21 +66,21 @@ namespace OpenXmlPowerTools
 
     public class WmlComparerConsolidateSettings
     {
-        public bool ConsolidateWithTable = true;
+        public bool ConsolidateWithTable { get; set; } = true;
     }
 
     public class WmlRevisedDocumentInfo
     {
-        public WmlDocument RevisedDocument;
-        public string Revisor;
-        public Color Color;
+        public WmlDocument RevisedDocument { get; set; }
+        public string Revisor { get; set; }
+        public Color Color { get; set; }
     }
 
     public static class WmlComparer
     {
-        public static bool s_False = false;
-        public static bool s_True = true;
-        public static bool s_SaveIntermediateFilesForDebugging = false;
+        public static bool s_False { get; set; }
+        public static bool s_True { get; set; } = true;
+        public static bool s_SaveIntermediateFilesForDebugging { get; set; } = false;
 
         public static WmlDocument Compare(WmlDocument source1, WmlDocument source2, WmlComparerSettings settings)
         {
@@ -787,7 +781,7 @@ namespace OpenXmlPowerTools
 
                         // process before
                         var contentToAddBefore = lci
-                            .Where(ci => ci.InsertBefore == true)
+                            .Where(ci => ci.InsertBefore)
                             .GroupAdjacent(ci => ci.Revisor + ci.Color.ToString())
                             .Select((groupedCi, idx) => AssembledConjoinedRevisionContent(emptyParagraph, groupedCi, idx, consolidatedWDoc, consolidateSettings));
                         ele.AddBeforeSelf(contentToAddBefore);
@@ -863,7 +857,7 @@ namespace OpenXmlPowerTools
                         // the magic function is AssembledConjoinedRevisionContent
 
                         var contentToAddAfter = lci
-                            .Where(ci => ci.InsertBefore == false)
+                            .Where(ci => ci.InsertBefore)
                             .GroupAdjacent(ci => ci.Revisor + ci.Color.ToString())
                             .Select((groupedCi, idx) => AssembledConjoinedRevisionContent(emptyParagraph, groupedCi, idx, consolidatedWDoc, consolidateSettings));
                         ele.AddAfterSelf(contentToAddAfter);
@@ -1254,7 +1248,7 @@ namespace OpenXmlPowerTools
                                     table,
                                     emptyParagraph,
                                 };
-								
+
                 var dummyElement = new XElement("dummy", content);
 
                 foreach (var rev in dummyElement.Descendants().Where(d => d.Attribute(W.author) != null))
@@ -5420,7 +5414,7 @@ namespace OpenXmlPowerTools
                                 {
                                     var charValue = dca.ContentElement.Value;
                                     var isWordSplit = ((int)charValue[0] >= 0x4e00 && (int)charValue[0] <= 0x9fff);
-                                    if (! isWordSplit)
+                                    if (!isWordSplit)
                                         isWordSplit = settings.WordSeparators.Contains(charValue[0]);
                                     if (isWordSplit)
                                         return false;

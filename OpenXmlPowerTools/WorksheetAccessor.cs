@@ -1,14 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
-using System.Xml;
 using ExcelFormula;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -419,7 +414,7 @@ namespace OpenXmlPowerTools
             if (element == null)
                 throw new ArgumentException("Range name not found: " + rangeName);
             string sheetName = element.Value.Substring(0, element.Value.IndexOf('!'));
-            string range = element.Value.Substring(element.Value.IndexOf('!') + 1).Replace("$","");
+            string range = element.Value.Substring(element.Value.IndexOf('!') + 1).Replace("$", "");
             int colonIndex = range.IndexOf(':');
             GetRowColumn(range.Substring(0, colonIndex), out startRow, out startColumn);
             GetRowColumn(range.Substring(colonIndex + 1), out endRow, out endColumn);
@@ -1990,7 +1985,7 @@ namespace OpenXmlPowerTools
         internal static WorksheetPart Create(SpreadsheetDocument document, List<string> headerList, string[][] valueTable, int headerRow)
         {
             XDocument xDocument = CreateEmptyWorksheet();
-            
+
             for (int i = 0; i < headerList.Count; i++)
             {
                 AddValue(xDocument, headerRow, i + 1, headerList[i]);

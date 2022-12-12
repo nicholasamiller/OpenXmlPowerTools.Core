@@ -1,14 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
-using OpenXmlPowerTools;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -427,7 +421,7 @@ namespace OpenXmlPowerTools
                         var firstRow = new XElement(S.row,
                             new XAttribute("r", "1"),
                             new XAttribute("spans", string.Format("1:{0}", chartData.SeriesNames.Length + 1)),
-                            new [] { new XElement(S.c,
+                            new[] { new XElement(S.c,
                                 new XAttribute("r", "A1"),
                                 new XAttribute("t", "str"),
                                 new XElement(S.v,

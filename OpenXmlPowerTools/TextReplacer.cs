@@ -1,14 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -71,7 +65,8 @@ namespace OpenXmlPowerTools
                                 replace, matchCase)));
                         XElement[] subRunArray = paragraphWithSplitRuns
                             .Elements(W.r)
-                            .Where(e => {
+                            .Where(e =>
+                            {
                                 XElement subRunElement = e.Elements().FirstOrDefault(el => el.Name != W.rPr);
                                 if (subRunElement == null)
                                     return false;
@@ -90,7 +85,8 @@ namespace OpenXmlPowerTools
                                 ParagraphChildProjection = pcp,
                                 CharacterToCompare = c,
                             });
-                            bool dontMatch = zipped.Any(z => {
+                            bool dontMatch = zipped.Any(z =>
+                            {
                                 if (z.ParagraphChildProjection.Annotation<MatchSemaphore>() != null)
                                     return true;
                                 bool b;
@@ -115,7 +111,8 @@ namespace OpenXmlPowerTools
                         {
                             List<XElement> elementsToReplace = paragraphWithReplacedRuns
                                 .Elements()
-                                .Where(e => {
+                                .Where(e =>
+                                {
                                     var sem = e.Annotation<MatchSemaphore>();
                                     if (sem == null)
                                         return false;

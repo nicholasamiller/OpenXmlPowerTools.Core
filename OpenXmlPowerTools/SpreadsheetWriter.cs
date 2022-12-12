@@ -3,22 +3,17 @@
 
 #undef DisplayWorkingSet
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using DocumentFormat.OpenXml.Packaging;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
-using DocumentFormat.OpenXml.Packaging;
-using OpenXmlPowerTools;
 
 namespace OpenXmlPowerTools
 {
     // The classes in SpreadsheetWriter are still a work-in-progress.  While they are useful in their current state, I will be enhancing and
     // changing them in the future.  In particular, I will be augmenting the various definition classes (WorkbookDfn, WorksheetDfn,
     // RowDfn, and CellDfn.
-    
+
     // They are robust enough in their current form to be used in enterprise, mission critical.
 
     public class WorkbookDfn

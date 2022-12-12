@@ -17,13 +17,11 @@ namespace OpenXmlPowerTools
             try
             {
                 color = Color.FromName(name);
-
                 return color.IsNamedColor;
             }
             catch
             {
-                color = default(Color);
-
+                color = default;
                 return false;
             }
         }

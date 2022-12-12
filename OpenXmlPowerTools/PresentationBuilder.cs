@@ -1,13 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Xml.Linq;
-using System.Text;
 using DocumentFormat.OpenXml.Packaging;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -710,7 +705,7 @@ namespace OpenXmlPowerTools
                 ExternalRelationship tempEr2 = newContentPart.ExternalRelationships.FirstOrDefault(er => er.Id == relId);
                 if (tempEr2 != null)
                     continue;
-                
+
                 oldPart = oldContentPart.GetPartById(relId);
                 newPart = newContentPart.AddNewPart<DiagramLayoutDefinitionPart>();
                 newPart.GetXDocument().Add(oldPart.GetXDocument().Root);
@@ -1156,7 +1151,8 @@ namespace OpenXmlPowerTools
                     Guid g = Guid.NewGuid();
                     string newRid = "R" + g.ToString().Replace("-", "");
                     var oldHyperlink = oldPart.HyperlinkRelationships.FirstOrDefault(h => h.Id == relId);
-                    if (oldHyperlink == null) {
+                    if (oldHyperlink == null)
+                    {
                         //TODO Issue with reference to another part: var temp = oldPart.GetPartById(relId);
                         RemoveContent(newContent, e.Name, relId);
                         continue;
@@ -1308,7 +1304,7 @@ namespace OpenXmlPowerTools
                         temp.AddContentPartRelTypeResourceIdTupple(newContentPart, imagePart.RelationshipType, newId);
                         imageReference.Attribute(attributeName).Value = newId;
                     }
-                    
+
                 }
             }
             else
@@ -1508,7 +1504,7 @@ namespace OpenXmlPowerTools
 
             var newId = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
             EmbeddedControlPersistencePart newPart = newContentPart.AddNewPart<EmbeddedControlPersistencePart>("application/vnd.ms-office.activeX+xml", newId);
-            
+
             newPart.FeedData(oldPart.GetStream());
             activeXPartReference.Attribute(attributeName).Value = newId;
 

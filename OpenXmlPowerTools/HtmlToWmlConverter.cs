@@ -1,32 +1,23 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
-using OpenXmlPowerTools;
 using OpenXmlPowerTools.HtmlToWml;
-using OpenXmlPowerTools.HtmlToWml.CSS;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
     public class HtmlToWmlConverterSettings
     {
-        public string MajorLatinFont;
-        public string MinorLatinFont;
-        public double DefaultFontSize;
-        public XElement DefaultSpacingElement;
-        public XElement DefaultSpacingElementForParagraphsInTables;
-        public XElement SectPr;
-        public string DefaultBlockContentMargin;
-        public string BaseUriForImages;
+        public string MajorLatinFont { get; set; }
+        public string MinorLatinFont { get; set; }
+        public double DefaultFontSize { get; set; }
+        public XElement DefaultSpacingElement { get; set; }
+        public XElement DefaultSpacingElementForParagraphsInTables { get; set; }
+        public XElement SectPr { get; set; }
+        public string DefaultBlockContentMargin { get; set; }
+        public string BaseUriForImages { get; set; }
 
         public Twip PageWidthTwips { get { return (long)SectPr.Elements(W.pgSz).Attributes(W._w).FirstOrDefault(); } }
         public Twip PageMarginLeftTwips { get { return (long)SectPr.Elements(W.pgMar).Attributes(W.left).FirstOrDefault(); } }
@@ -36,7 +27,7 @@ namespace OpenXmlPowerTools
         public Emu PageMarginRightEmus { get { return Emu.TwipsToEmus(PageMarginRightTwips); } }
     }
 
-    public class HtmlToWmlConverter
+    public static class HtmlToWmlConverter
     {
         public static WmlDocument ConvertHtmlToWml(
             string defaultCss,
@@ -303,7 +294,8 @@ AAAAAAAAAAAAAAAANi8AAGRvY1Byb3BzL2FwcC54bWxQSwUGAAAAAAwADAAJAwAA3DEAAAAA";
 
         public static WmlDocument EmptyDocument
         {
-            get {
+            get
+            {
                 if (s_EmptyDocument == null)
                 {
                     s_EmptyDocument = new WmlDocument("EmptyDocument.docx", Convert.FromBase64String(s_Blank_wml_base64));
@@ -320,42 +312,38 @@ AAAAAAAAAAAAAAAANi8AAGRvY1Byb3BzL2FwcC54bWxQSwUGAAAAAAwADAAJAwAA3DEAAAAA";
         public static HtmlToWmlConverterSettings GetDefaultSettings(WmlDocument wmlDocument)
         {
             HtmlToWmlConverterSettings settings = new HtmlToWmlConverterSettings();
-            using (MemoryStream ms = new MemoryStream())
+            using (MemoryStream ms = new())
             {
                 ms.Write(wmlDocument.DocumentByteArray, 0, wmlDocument.DocumentByteArray.Length);
-                using (WordprocessingDocument wDoc = WordprocessingDocument.Open(ms, false))
-                {
-                    string majorLatinFont, minorLatinFont;
-                    double defaultFontSize;
-                    GetDefaultFontInfo(wDoc, out majorLatinFont, out minorLatinFont, out defaultFontSize);
-                    settings.MajorLatinFont = majorLatinFont;
-                    settings.MinorLatinFont = minorLatinFont;
-                    settings.DefaultFontSize = defaultFontSize;
+                using WordprocessingDocument wDoc = WordprocessingDocument.Open(ms, false);
+                GetDefaultFontInfo(wDoc, out string majorLatinFont, out string minorLatinFont, out double defaultFontSize);
+                settings.MajorLatinFont = majorLatinFont;
+                settings.MinorLatinFont = minorLatinFont;
+                settings.DefaultFontSize = defaultFontSize;
 
-                    settings.MinorLatinFont = "Times New Roman";
-                    settings.DefaultFontSize = 12d;
-                    settings.DefaultBlockContentMargin = "auto";
-                    settings.DefaultSpacingElement = new XElement(W.spacing,
-                        new XAttribute(W.before, 100),
-                        new XAttribute(W.beforeAutospacing, 1),
-                        new XAttribute(W.after, 100),
-                        new XAttribute(W.afterAutospacing, 1),
-                        new XAttribute(W.line, 240),
-                        new XAttribute(W.lineRule, "auto"));
-                    settings.DefaultSpacingElementForParagraphsInTables = new XElement(W.spacing,
-                        new XAttribute(W.before, 100),
-                        new XAttribute(W.beforeAutospacing, 1),
-                        new XAttribute(W.after, 100),
-                        new XAttribute(W.afterAutospacing, 1),
-                        new XAttribute(W.line, 240),
-                        new XAttribute(W.lineRule, "auto"));
+                settings.MinorLatinFont = "Times New Roman";
+                settings.DefaultFontSize = 12d;
+                settings.DefaultBlockContentMargin = "auto";
+                settings.DefaultSpacingElement = new XElement(W.spacing,
+                    new XAttribute(W.before, 100),
+                    new XAttribute(W.beforeAutospacing, 1),
+                    new XAttribute(W.after, 100),
+                    new XAttribute(W.afterAutospacing, 1),
+                    new XAttribute(W.line, 240),
+                    new XAttribute(W.lineRule, "auto"));
+                settings.DefaultSpacingElementForParagraphsInTables = new XElement(W.spacing,
+                    new XAttribute(W.before, 100),
+                    new XAttribute(W.beforeAutospacing, 1),
+                    new XAttribute(W.after, 100),
+                    new XAttribute(W.afterAutospacing, 1),
+                    new XAttribute(W.line, 240),
+                    new XAttribute(W.lineRule, "auto"));
 
-                    XDocument mXDoc = wDoc.MainDocumentPart.GetXDocument();
-                    XElement existingSectPr = mXDoc.Root.Descendants(W.sectPr).FirstOrDefault();
-                    settings.SectPr = new XElement(W.sectPr,
-                        existingSectPr.Elements(W.pgSz),
-                        existingSectPr.Elements(W.pgMar));
-                }
+                XDocument mXDoc = wDoc.MainDocumentPart.GetXDocument();
+                XElement existingSectPr = mXDoc.Root.Descendants(W.sectPr).First();
+                settings.SectPr = new XElement(W.sectPr,
+                                               existingSectPr.Elements(W.pgSz),
+                                               existingSectPr.Elements(W.pgMar));
             }
             return settings;
         }
@@ -408,7 +396,7 @@ AAAAAAAAAAAAAAAANi8AAGRvY1Byb3BzL2FwcC54bWxQSwUGAAAAAAwADAAJAwAA3DEAAAAA";
                         return false;
                     return true;
                 })
-                .Select(l => l + Environment.NewLine )
+                .Select(l => l + Environment.NewLine)
                 .StringConcatenate();
             return cleanCss;
         }

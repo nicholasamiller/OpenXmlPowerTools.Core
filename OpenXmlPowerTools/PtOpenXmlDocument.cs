@@ -46,12 +46,9 @@ Here is creating a new WmlDocument:
     }
 */
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Xml.Linq;
-using System.IO.Packaging;
 using DocumentFormat.OpenXml.Packaging;
+using System.IO.Packaging;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {

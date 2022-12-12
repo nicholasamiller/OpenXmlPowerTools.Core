@@ -9,15 +9,10 @@
 // Twitter: @EricWhiteDev
 // Email: eric@ericwhite.com
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using DocumentFormat.OpenXml.Packaging;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.IO;
 using System.Xml.Linq;
-using DocumentFormat.OpenXml.Packaging;
-using System.Drawing;
 
 namespace OpenXmlPowerTools
 {

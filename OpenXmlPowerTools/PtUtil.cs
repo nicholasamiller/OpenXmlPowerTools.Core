@@ -1,13 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
@@ -56,7 +52,7 @@ namespace OpenXmlPowerTools
         public static string MakeValidXml(string p)
         {
             return p.Any(c => c < 0x20)
-                ? p.Select(c => c < 0x20 ? string.Format("_{0:X}_", (int) c) : c.ToString()).StringConcatenate()
+                ? p.Select(c => c < 0x20 ? string.Format("_{0:X}_", (int)c) : c.ToString()).StringConcatenate()
                 : p;
         }
 
@@ -820,7 +816,7 @@ namespace OpenXmlPowerTools
             if (a == null)
                 return null;
 
-            string s = ((string) a).ToLower();
+            string s = ((string)a).ToLower();
             switch (s)
             {
                 case "1":
@@ -836,7 +832,7 @@ namespace OpenXmlPowerTools
                 case "off":
                     return false;
                 default:
-                    return (bool) a;
+                    return (bool)a;
             }
         }
 
@@ -1160,12 +1156,12 @@ namespace OpenXmlPowerTools
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable<TSource>) this).GetEnumerator();
+            return ((IEnumerable<TSource>)this).GetEnumerator();
         }
 
         IEnumerator<TSource> IEnumerable<TSource>.GetEnumerator()
         {
-            return ((IEnumerable<TSource>) GroupList).GetEnumerator();
+            return ((IEnumerable<TSource>)GroupList).GetEnumerator();
         }
     }
 
@@ -1396,7 +1392,7 @@ namespace OpenXmlPowerTools
             Buckets = new Dictionary<string, BucketInfo>();
         }
     }
-    
+
     public class XEntity : XText
     {
         public override void WriteTo(XmlWriter writer)

@@ -4,12 +4,8 @@
 #define TestForUnsupportedDocuments
 #define MergeStylesWithSameNames
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -257,11 +253,11 @@ namespace OpenXmlPowerTools
                         Index = i,
                     })
                     .Rollup(new Atbid
-                        {
-                            BlockLevelContent = (XElement)null,
-                            Index = -1,
-                            Div = 0,
-                        },
+                    {
+                        BlockLevelContent = (XElement)null,
+                        Index = -1,
+                        Div = 0,
+                    },
                         (b, p) =>
                         {
                             XElement elementBefore = b.BlockLevelContent
@@ -470,15 +466,15 @@ namespace OpenXmlPowerTools
                         var body = doc.MainDocumentPart.GetXDocument().Root.Element(W.body);
 
                         if (body != null && body.Elements().Any())
-						{
-							var sectPr = doc.MainDocumentPart.GetXDocument().Root.Elements(W.body)
-								.Elements().LastOrDefault();
-							if (sectPr != null && sectPr.Name == W.sectPr)
-							{
-								AddSectionAndDependencies(doc, output, sectPr, images);
-								output.MainDocumentPart.GetXDocument().Root.Element(W.body).Add(sectPr);
-							}
-						}
+                        {
+                            var sectPr = doc.MainDocumentPart.GetXDocument().Root.Elements(W.body)
+                                .Elements().LastOrDefault();
+                            if (sectPr != null && sectPr.Name == W.sectPr)
+                            {
+                                AddSectionAndDependencies(doc, output, sectPr, images);
+                                output.MainDocumentPart.GetXDocument().Root.Element(W.body).Add(sectPr);
+                            }
+                        }
                     }
                 }
                 else
@@ -669,7 +665,7 @@ namespace OpenXmlPowerTools
                                 while (true)
                                 {
                                     var newStyleId = GenStyleIdFromStyleName(styleName);
-                                    if (! styleIds.Contains(newStyleId))
+                                    if (!styleIds.Contains(newStyleId))
                                     {
                                         correctionList.Add(styleId, newStyleId);
                                         styleNameMap.Add(styleName, newStyleId);
@@ -1736,7 +1732,7 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                     var toId = (string)toStyle.Attribute(W.styleId);
                     if (fromId != toId)
                     {
-                        if (! newIds.ContainsKey(fromId))
+                        if (!newIds.ContainsKey(fromId))
                             newIds.Add(fromId, toId);
                     }
                 }
@@ -1987,9 +1983,10 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                 XElement element = oldComments
                     .Descendants()
                     .Elements(W.comment)
-                    .Where(p => {
+                    .Where(p =>
+                    {
                         int thisId;
-                        if (! int.TryParse((string)p.Attribute(W.id), out thisId))
+                        if (!int.TryParse((string)p.Attribute(W.id), out thisId))
                             throw new DocumentBuilderException("Invalid document - invalid comment id");
                         return thisId == id;
                     })
@@ -1999,7 +1996,7 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                 XElement newElement = new XElement(element);
                 newElement.Attribute(W.id).Value = number.ToString();
                 newComments.Root.Add(newElement);
-                if (! commentIdMap.ContainsKey(id))
+                if (!commentIdMap.ContainsKey(id))
                     commentIdMap.Add(id, number);
                 number++;
             }
@@ -3622,13 +3619,13 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                 newXDoc.Declaration.Encoding = Utf8;
                 newXDoc.Add(new XElement(W.styles,
                     new XAttribute(XNamespace.Xmlns + "w", W.w)
-                    
+
                     //,
                     //stylesPart.GetXDocument().Descendants(W.docDefaults)
-                    
+
                     //,
                     //new XElement(W.latentStyles, stylesPart.GetXDocument().Descendants(W.latentStyles).Attributes())
-                    
+
                     ));
                 MergeDocDefaultStyles(stylesPart.GetXDocument(), newXDoc);
                 MergeStyles(sourceDocument, newDocument, stylesPart.GetXDocument(), newXDoc, Enumerable.Empty<XElement>());

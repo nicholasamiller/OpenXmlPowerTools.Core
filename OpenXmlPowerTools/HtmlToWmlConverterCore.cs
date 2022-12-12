@@ -96,19 +96,11 @@
 // then need to make sure that all of the cells below the caption have the border on the appropriate sides so that it looks as if the table
 // has a border.
 
-using System;
-using System.Collections.Generic;
+using DocumentFormat.OpenXml.Packaging;
+using OpenXmlPowerTools.HtmlToWml.CSS;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Xml.Linq;
-using DocumentFormat.OpenXml.Packaging;
-using OpenXmlPowerTools;
-using OpenXmlPowerTools.HtmlToWml;
-using OpenXmlPowerTools.HtmlToWml.CSS;
-using System.Text.RegularExpressions;
 
 namespace OpenXmlPowerTools.HtmlToWml
 {
@@ -640,7 +632,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                 XElement pPr = p != null ? p.Element(W.pPr) : null;
                 XElement rPr = run.Element(W.rPr);
                 XElement rFonts = rPr != null ? rPr.Element(W.rFonts) : null;
-                string str = run.Descendants(W.t).Select(t => (string) t).StringConcatenate();
+                string str = run.Descendants(W.t).Select(t => (string)t).StringConcatenate();
                 if ((pPr == null) || (rPr == null) || (rFonts == null) || (str == "")) continue;
 
                 AdjustFontAttributes(wDoc, run, pPr, rPr);
@@ -655,19 +647,19 @@ namespace OpenXmlPowerTools.HtmlToWml
                 switch (ft)
                 {
                     case FontType.Ascii:
-                        fontType = (string) rFonts.Attribute(W.ascii);
+                        fontType = (string)rFonts.Attribute(W.ascii);
                         languageType = "western";
                         break;
                     case FontType.HAnsi:
-                        fontType = (string) rFonts.Attribute(W.hAnsi);
+                        fontType = (string)rFonts.Attribute(W.hAnsi);
                         languageType = "western";
                         break;
                     case FontType.EastAsia:
-                        fontType = (string) rFonts.Attribute(W.eastAsia);
+                        fontType = (string)rFonts.Attribute(W.eastAsia);
                         languageType = "eastAsia";
                         break;
                     case FontType.CS:
-                        fontType = (string) rFonts.Attribute(W.cs);
+                        fontType = (string)rFonts.Attribute(W.cs);
                         languageType = "bidi";
                         break;
                 }
@@ -706,7 +698,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                     continue;
 
                 // get HtmlToWmlCssWidth attribute
-                var cssWidth = (string) run.Attribute(PtOpenXml.HtmlToWmlCssWidth);
+                var cssWidth = (string)run.Attribute(PtOpenXml.HtmlToWmlCssWidth);
                 if (!cssWidth.EndsWith("pt")) continue;
 
                 cssWidth = cssWidth.Substring(0, cssWidth.Length - 2);
@@ -714,8 +706,8 @@ namespace OpenXmlPowerTools.HtmlToWml
                 if (!decimal.TryParse(cssWidth, out cssWidthInDecimal)) continue;
 
                 // calculate the number of non-breaking spaces to add
-                decimal cssWidthInPixels = cssWidthInDecimal/72*96;
-                var numberOfNpSpToAdd = (int) ((cssWidthInPixels - pixWidth)/nbSpWidth);
+                decimal cssWidthInPixels = cssWidthInDecimal / 72 * 96;
+                var numberOfNpSpToAdd = (int)((cssWidthInPixels - pixWidth) / nbSpWidth);
                 if (numberOfNpSpToAdd > 0)
                     run.Add(new XElement(W.t, "".PadRight(numberOfNpSpToAdd, '\u00a0')));
             }
@@ -2287,10 +2279,8 @@ namespace OpenXmlPowerTools.HtmlToWml
                 var commaIndex = srcAttribute.IndexOf(',', semiIndex);
                 var base64 = srcAttribute.Substring(commaIndex + 1);
                 ba = Convert.FromBase64String(base64);
-                using (MemoryStream ms = new MemoryStream(ba))
-                {
-                    bmp = new Bitmap(ms);
-                }
+                using var ms = new MemoryStream(ba);
+                bmp = new Bitmap(ms);
             }
             else
             {
@@ -2937,7 +2927,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                 subSuper = new XElement(W.vertAlign, new XAttribute(W.val, "subscript"));
             else
                 if (supAncestor)
-                    subSuper = new XElement(W.vertAlign, new XAttribute(W.val, "superscript"));
+                subSuper = new XElement(W.vertAlign, new XAttribute(W.val, "superscript"));
 
             XElement rFonts = null;
             if (fontFamilyString != null)
@@ -3339,14 +3329,14 @@ namespace OpenXmlPowerTools.HtmlToWml
         private static XElement GetTableLook(XElement element)
         {
             XElement tblLook = XElement.Parse(
-                //@"<w:tblLook w:val='0600'
-                //  w:firstRow='0'
-                //  w:lastRow='0'
-                //  w:firstColumn='0'
-                //  w:lastColumn='0'
-                //  w:noHBand='1'
-                //  w:noVBand='1'
-                //  xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>"
+//@"<w:tblLook w:val='0600'
+//  w:firstRow='0'
+//  w:lastRow='0'
+//  w:firstColumn='0'
+//  w:lastColumn='0'
+//  w:noHBand='1'
+//  w:noVBand='1'
+//  xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>"
 
 @"<w:tblLook w:val='0600' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>"
 
@@ -3487,8 +3477,8 @@ namespace OpenXmlPowerTools.HtmlToWml
                 vMerge = new XElement(W.vMerge);
             else
                 if (element.Attribute("HtmlToWmlVMergeRestart") != null)
-                    vMerge = new XElement(W.vMerge,
-                        new XAttribute(W.val, "restart"));
+                vMerge = new XElement(W.vMerge,
+                    new XAttribute(W.val, "restart"));
 
             string vAlignValue = (string)element.Attribute(XhtmlNoNamespace.valign);
             CssExpression verticalAlignmentProp = element.GetProp("vertical-align");

@@ -1,17 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
-using System.IO;
-using OpenXmlPowerTools;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -279,7 +270,7 @@ namespace OpenXmlPowerTools
             // if there are any rows that have all cells with no r attribute, then fix them up
             var invalidRows = shXDoc
                 .Descendants(S.row)
-                .Where(r => ! r.Elements(S.c).Any(c => c.Attribute("r") != null))
+                .Where(r => !r.Elements(S.c).Any(c => c.Attribute("r") != null))
                 .ToList();
 
             foreach (var row in invalidRows)
@@ -620,7 +611,7 @@ namespace OpenXmlPowerTools
                 TransformRemoveNamespace(sheetFormatPr),
                 TransformRemoveNamespace(shXDoc.Root.Element(S.cols)),
                 mergeCells);
-            
+
             if (!dataProps.HasAttributes && !dataProps.HasElements)
                 dataProps = null;
             return dataProps;

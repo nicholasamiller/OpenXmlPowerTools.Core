@@ -1,11 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -1387,8 +1384,8 @@ namespace OpenXmlPowerTools
                             {
                                 if (i == 0 || i == gLen - 1)
                                     return g.Select(gc => FixUpDeletedOrInsertedFieldCodesTransform(gc.Ele));
-                                if (grouped[i-1].Key == 2 &&
-                                    grouped[i+1].Key == 2)
+                                if (grouped[i - 1].Key == 2 &&
+                                    grouped[i + 1].Key == 2)
                                 {
                                     return new XElement(W.del,
                                         g.Select(gc => TransformInstrTextToDelInstrText(gc.Ele)));
@@ -1490,7 +1487,7 @@ namespace OpenXmlPowerTools
 
                         if (gridSpan == null)
                             gridSpan = 1;
-                        
+
                         var z = Math.Min(gridLines.Length - 1, lastUsed + (int)gridSpan);
                         int w = gridLines.Where((g, i) => i > lastUsed && i <= z).Sum();
                         tcW.Value = w.ToString();
@@ -2109,7 +2106,8 @@ namespace OpenXmlPowerTools
                                     state = 1;
                                     currentKey += 1;
                                     deletedParagraphGroupingInfo.Add(
-                                        new GroupingInfo() {
+                                        new GroupingInfo()
+                                        {
                                             GroupingType = GroupingType.DeletedRange,
                                             GroupingKey = currentKey,
                                         });

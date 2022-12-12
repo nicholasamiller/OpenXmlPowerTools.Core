@@ -1,13 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
-using System.IO;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -258,7 +253,8 @@ namespace OpenXmlPowerTools
             SharedStringTablePart sharedStringTable = doc.WorkbookPart.SharedStringTablePart;
             IEnumerable<XElement> cells = this.RowElement.Elements(S.c);
             var r = cells
-                .Select(cell => {
+                .Select(cell =>
+                {
                     var cellType = (string)cell.Attribute("t");
                     var sharedString = cellType == "s" ?
                         sharedStringTable

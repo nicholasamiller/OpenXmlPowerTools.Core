@@ -1,54 +1,45 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.IO.Packaging;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
+using System.Drawing;
 using System.Globalization;
+using System.IO.Packaging;
+using System.Text;
+using System.Xml.Linq;
+using Graphics = System.Drawing.Graphics;
 
 namespace OpenXmlPowerTools
 {
     public class MetricsGetterSettings
     {
-        public bool IncludeTextInContentControls;
-        public bool IncludeXlsxTableCellData;
-        public bool RetrieveNamespaceList;
-        public bool RetrieveContentTypeList;
+        public bool IncludeTextInContentControls { get; set; }
+        public bool IncludeXlsxTableCellData { get; set; }
+        public bool RetrieveNamespaceList { get; set; }
+        public bool RetrieveContentTypeList { get; set; }
     }
 
     public class MetricsGetter
     {
-        private static Lazy<Graphics> Graphics { get; } = new Lazy<Graphics>(() =>
-        {
-            Image image = new Bitmap(1, 1);
-            return System.Drawing.Graphics.FromImage(image);
-        });
-
         public static XElement GetMetrics(string fileName, MetricsGetterSettings settings)
         {
-            FileInfo fi = new FileInfo(fileName);
+            FileInfo fi = new(fileName);
             if (!fi.Exists)
                 throw new FileNotFoundException("{0} does not exist.", fi.FullName);
             if (Util.IsWordprocessingML(fi.Extension))
             {
-                WmlDocument wmlDoc = new WmlDocument(fi.FullName, true);
+                WmlDocument wmlDoc = new(fi.FullName, true);
                 return GetDocxMetrics(wmlDoc, settings);
             }
             if (Util.IsSpreadsheetML(fi.Extension))
             {
-                SmlDocument smlDoc = new SmlDocument(fi.FullName, true);
+                SmlDocument smlDoc = new(fi.FullName, true);
                 return GetXlsxMetrics(smlDoc, settings);
             }
             if (Util.IsPresentationML(fi.Extension))
             {
-                PmlDocument pmlDoc = new PmlDocument(fi.FullName, true);
+                PmlDocument pmlDoc = new(fi.FullName, true);
                 return GetPptxMetrics(pmlDoc, settings);
             }
             return null;
@@ -58,34 +49,28 @@ namespace OpenXmlPowerTools
         {
             try
             {
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    ms.Write(wmlDoc.DocumentByteArray, 0, wmlDoc.DocumentByteArray.Length);
-                    using (WordprocessingDocument document = WordprocessingDocument.Open(ms, true))
-                    {
-                        bool hasTrackedRevisions = RevisionAccepter.HasTrackedRevisions(document);
-                        if (hasTrackedRevisions)
-                            RevisionAccepter.AcceptRevisions(document);
-                        XElement metrics1 = GetWmlMetrics(wmlDoc.FileName, false, document, settings);
-                        if (hasTrackedRevisions)
-                            metrics1.Add(new XElement(H.RevisionTracking, new XAttribute(H.Val, true)));
-                        return metrics1;
-                    }
-                }
+                using MemoryStream ms = new();
+                ms.Write(wmlDoc.DocumentByteArray, 0, wmlDoc.DocumentByteArray.Length);
+                using WordprocessingDocument document = WordprocessingDocument.Open(ms, true);
+                bool hasTrackedRevisions = RevisionAccepter.HasTrackedRevisions(document);
+                if (hasTrackedRevisions)
+                    RevisionAccepter.AcceptRevisions(document);
+                XElement metrics1 = GetWmlMetrics(wmlDoc.FileName, false, document, settings);
+                if (hasTrackedRevisions)
+                    metrics1.Add(new XElement(H.RevisionTracking, new XAttribute(H.Val, true)));
+                return metrics1;
             }
             catch (OpenXmlPowerToolsException e)
             {
                 if (e.ToString().Contains("Invalid Hyperlink"))
                 {
-                    using (MemoryStream ms = new MemoryStream())
+                    using (MemoryStream ms = new())
                     {
                         ms.Write(wmlDoc.DocumentByteArray, 0, wmlDoc.DocumentByteArray.Length);
-#if !NET35
-                        UriFixer.FixInvalidUri(ms, brokenUri => FixUri(brokenUri));
-#endif
+                        UriFixer.FixInvalidUri(ms, FixUri);
                         wmlDoc = new WmlDocument("dummy.docx", ms.ToArray());
                     }
-                    using (MemoryStream ms = new MemoryStream())
+                    using (MemoryStream ms = new())
                     {
                         ms.Write(wmlDoc.DocumentByteArray, 0, wmlDoc.DocumentByteArray.Length);
                         using (WordprocessingDocument document = WordprocessingDocument.Open(ms, true))
@@ -112,12 +97,10 @@ namespace OpenXmlPowerTools
         {
             try
             {
-                using (var f = new Font(ff, (float)sz / 2f, fs))
-                {
-                    var proposedSize = new Size(int.MaxValue, int.MaxValue);
-                    var sf = Graphics.Value.MeasureString(text, f, proposedSize);
-                    return (int) sf.Width;
-                }
+                var f = new Font(ff, (float)sz / 2f, fs);
+                var proposedSize = new Size(int.MaxValue, int.MaxValue);
+                var sf = Graphics.FromImage(new Bitmap(1, 1)).MeasureString(text, f, proposedSize);
+                return (int)sf.Width;
             }
             catch
             {
@@ -226,7 +209,7 @@ namespace OpenXmlPowerTools
                             .Distinct()
                             .ToList();
                         foreach (var item in namespaces)
-		                    uniqueNamespaces.Add(item);
+                            uniqueNamespaces.Add(item);
                     }
                     // if catch exception, forget about it.  Just trying to get a most complete survey possible of all namespaces in all documents.
                     // if caught exception, chances are the document is bad anyway.
@@ -886,30 +869,30 @@ namespace OpenXmlPowerTools
                     var isGroup = element.Elements(W.sdtPr).Elements(W.group).Any();
                     var isPicture = element.Elements(W.sdtPr).Elements(W.picture).Any();
                     var isRichText = element.Elements(W.sdtPr).Elements(W.richText).Any() ||
-                        (! isText && 
-                        ! isBibliography && 
-                        ! isCitation && 
-                        ! isComboBox && 
-                        ! isDate && 
-                        ! isDocPartList && 
-                        ! isDocPartObj && 
-                        ! isDropDownList && 
-                        ! isEquation && 
-                        ! isGroup && 
-                        ! isPicture);
+                        (!isText &&
+                        !isBibliography &&
+                        !isCitation &&
+                        !isComboBox &&
+                        !isDate &&
+                        !isDocPartList &&
+                        !isDocPartObj &&
+                        !isDropDownList &&
+                        !isEquation &&
+                        !isGroup &&
+                        !isPicture);
                     string type = null;
-                    if (isText        ) type = "Text";
+                    if (isText) type = "Text";
                     if (isBibliography) type = "Bibliography";
-                    if (isCitation    ) type = "Citation";
-                    if (isComboBox    ) type = "ComboBox";
-                    if (isDate        ) type = "Date";
-                    if (isDocPartList ) type = "DocPartList";
-                    if (isDocPartObj  ) type = "DocPartObj";
+                    if (isCitation) type = "Citation";
+                    if (isComboBox) type = "ComboBox";
+                    if (isDate) type = "Date";
+                    if (isDocPartList) type = "DocPartList";
+                    if (isDocPartObj) type = "DocPartObj";
                     if (isDropDownList) type = "DropDownList";
-                    if (isEquation    ) type = "Equation";
-                    if (isGroup       ) type = "Group";
-                    if (isPicture     ) type = "Picture";
-                    if (isRichText    ) type = "RichText";
+                    if (isEquation) type = "Equation";
+                    if (isGroup) type = "Group";
+                    if (isPicture) type = "Picture";
+                    if (isRichText) type = "RichText";
                     var typeAttr = new XAttribute(H.Type, type);
 
                     return new XElement(H.ContentControl,

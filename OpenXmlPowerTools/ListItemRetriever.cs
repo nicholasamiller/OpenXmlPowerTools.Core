@@ -1,12 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -17,7 +13,7 @@ namespace OpenXmlPowerTools
             {
                 {"fr-FR", ListItemTextGetter_fr_FR.GetListItemText},
                 {"tr-TR", ListItemTextGetter_tr_TR.GetListItemText},
-                {"ru-RU", ListItemTextGetter_ru_RU.GetListItemText}, 
+                {"ru-RU", ListItemTextGetter_ru_RU.GetListItemText},
                 {"sv-SE", ListItemTextGetter_sv_SE.GetListItemText},
                 {"zh-CN", ListItemTextGetter_zh_CN.GetListItemText},
             };
@@ -335,7 +331,7 @@ namespace OpenXmlPowerTools
                 IsZeroNumId = isZeroNumId;
             }
         }
-        
+
         public static void SetParagraphLevel(XElement paragraph, int ilvl)
         {
             var pi = paragraph.Annotation<ParagraphInfo>();
@@ -574,7 +570,7 @@ namespace OpenXmlPowerTools
             return listItemSource;
         }
 
-        private static ListItemSource InitializeStyleListItemSource(XDocument numXDoc, XDocument stylesXDoc, XElement paragraph, string paragraphStyleName, 
+        private static ListItemSource InitializeStyleListItemSource(XDocument numXDoc, XDocument stylesXDoc, XElement paragraph, string paragraphStyleName,
             out int? ilvl, out bool? zeroNumId)
         {
             zeroNumId = null;
@@ -774,7 +770,7 @@ namespace OpenXmlPowerTools
 
             int[] levelNumbers = levelNumbersAnnotation.LevelNumbersArray;
             string languageIdentifier = GetLanguageIdentifier(paragraph, stylesXDoc);
-            string listItem = FormatListItem(listItemInfo, levelNumbers, GetParagraphLevel(paragraph), 
+            string listItem = FormatListItem(listItemInfo, levelNumbers, GetParagraphLevel(paragraph),
                 lvlText, stylesXDoc, languageIdentifier, settings);
             return listItem;
         }
@@ -875,7 +871,7 @@ namespace OpenXmlPowerTools
         private static void InitializeListItemRetrieverForPart(WordprocessingDocument wordDoc, OpenXmlPart part, ListItemRetrieverSettings settings)
         {
             var mainXDoc = part.GetXDocument();
-            
+
             var numPart = wordDoc.MainDocumentPart.NumberingDefinitionsPart;
             if (numPart == null)
                 return;

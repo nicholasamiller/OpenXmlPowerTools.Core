@@ -1,16 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net45;net46;netstandard2.0;net6.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Authors>Microsoft, Eric White, Lionel Vallet</Authors>
-		<RepositoryUrl>https://github.com/LionelVallet/Open-Xml-PowerTools</RepositoryUrl>
-		<PackageId>OpenXmlPowerTools.NetStandard</PackageId>
-		<PackageTags>OpenXmlPowerTools, NET, Standard, OpenXML, Power, Tools</PackageTags>
+		<Authors>Microsoft, Eric White, Lionel Vallet, Alexander Solovey</Authors>
+		<RepositoryUrl>https://github.com/sawcheg/OpenXmlPowerTools.NetCore</RepositoryUrl>
+		<PackageId>OpenXmlPowerTools.NetCore</PackageId>
+		<PackageTags>OpenXmlPowerTools, NET, OpenXML, Power, Tools</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageProjectUrl>https://github.com/LionelVallet/Open-Xml-PowerTools</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/sawcheg/OpenXmlPowerTools.NetCore</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Description>
-			Based on maintainer EricWhite's vNext fork, includes .NET 6.0 and .NET Standard 2.0 build target for use in cross-platform scenarios.
+			Based on maintainer Lionel Vallet's vNext fork, includes .NET 6.0 and .NET 7.0 build target for use in cross-platform scenarios.
 
 			The Open XML PowerTools provides guidance and example code for programming with Open XML Documents (DOCX, XLSX, and PPTX). It is based on, and extends the functionality of the Open XML SDK.
 
@@ -25,7 +25,8 @@
 			•Retrieving metrics from DOCX files, including the hierarchy of styles used, the languages used, and the fonts used.
 			•Writing XLSX files using far simpler code than directly writing the markup, including a streaming approach that enables writing XLSX files with millions of rows.
 		</Description>
-		<Version>4.6.0</Version>
+		<Version>1.0.0</Version>
+		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
 		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
@@ -38,6 +39,10 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
 		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+		<CodeAnalysisRuleSet />
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
+	  <CodeAnalysisRuleSet />
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="..\README.md">
@@ -47,29 +52,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DocumentFormat.OpenXml" Version="2.14.0" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net45'">
-		<Reference Include="System.IO.Compression" />
-		<Reference Include="System.Windows.Forms" />
-		<Reference Include="WindowsBase" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-		<Reference Include="System.IO.Compression" />
-		<Reference Include="System.Windows.Forms" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
-		<PackageReference Include="System.Drawing.Common" Version="4.5.0" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
-		<PackageReference Include="System.Drawing.Common" Version="6.0" />
-	</ItemGroup>
-
-	<ItemGroup>
+		<PackageReference Include="DocumentFormat.OpenXml" Version="2.18.0" />
+		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
 		<PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
 	</ItemGroup>
 </Project>

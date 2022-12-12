@@ -1,13 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
-using System.Drawing;
+using System.Xml.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -1673,7 +1668,7 @@ namespace OpenXmlPowerTools
                     color1 = Convert.ToInt32(color1str, 16);
                 }
                 // if the above throws ArgumentException, FormatException, or OverflowException, then abort
-                catch (Exception) 
+                catch (Exception)
                 {
                     return sideToReplace;
                 }
@@ -3107,7 +3102,7 @@ namespace OpenXmlPowerTools
                 .toArray();
             */
 
-            var charToExamine = str.FirstOrDefault(c => ! WeakAndNeutralDirectionalCharacters.Contains(c));
+            var charToExamine = str.FirstOrDefault(c => !WeakAndNeutralDirectionalCharacters.Contains(c));
             if (charToExamine == '\0')
                 charToExamine = str[0];
 

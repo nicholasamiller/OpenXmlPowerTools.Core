@@ -1,16 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
-using OpenXmlPowerTools;
-using OpenXmlPowerTools.HtmlToWml;
 using OpenXmlPowerTools.HtmlToWml.CSS;
 using System.Globalization;
+using System.Text;
+using System.Xml.Linq;
 
 #if false
 Sort:
@@ -557,7 +551,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                         return false;
                     return true;
                 },
-                InitialValue = (element, settings) => 
+                InitialValue = (element, settings) =>
                     {
                         if (settings.DefaultBlockContentMargin != null)
                         {
@@ -872,7 +866,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                         return false;
                     return true;
                 },
-                InitialValue = (element, settings) => 
+                InitialValue = (element, settings) =>
                 {
                     if (element.Parent == null)
                     {
