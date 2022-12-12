@@ -4,6 +4,7 @@
 #undef DisplayWorkingSet
 
 using DocumentFormat.OpenXml.Packaging;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -43,7 +44,7 @@ namespace OpenXmlPowerTools
     // Standard formats
     public class CellDfn
     {
-        public static Dictionary<string, int> StandardFormats = new Dictionary<string, int>
+        public static Dictionary<string, int> StandardFormats { get; } = new()
         {
             { "0",                        1   },
             { "0.00",                     2   },
@@ -73,12 +74,12 @@ namespace OpenXmlPowerTools
             { "##0.0E+0",                 48  },
             { "@",                        49  },
         };
-        public object Value;
-        public CellDataType? CellDataType;
-        public HorizontalCellAlignment? HorizontalCellAlignment;
-        public bool? Bold;
-        public bool? Italic;
-        public string FormatCode;
+        public object Value { get; set; }
+        public CellDataType? CellDataType { get; set; }
+        public HorizontalCellAlignment? HorizontalCellAlignment { get; set; }
+        public bool? Bold { get; set; }
+        public bool? Italic { get; set; }
+        public string FormatCode { get; set; }
     }
 
     public enum HorizontalCellAlignment
@@ -180,7 +181,7 @@ namespace OpenXmlPowerTools
 
         public static void AddWorksheet(SpreadsheetDocument sDoc, WorksheetDfn worksheetData)
         {
-            Regex validSheetName = new Regex(@"^[^'*\[\]/\\:?][^*\[\]/\\:?]{0,30}$");
+            Regex validSheetName = new(@"^[^'*\[\]/\\:?][^*\[\]/\\:?]{0,30}$");
             if (!validSheetName.IsMatch(worksheetData.Name))
                 throw new InvalidSheetNameException(worksheetData.Name);
 
@@ -211,7 +212,7 @@ namespace OpenXmlPowerTools
                 if (size == null)
                     size = 1;
                 else
-                    size = size + 1;
+                    size++;
                 vector.SetAttributeValue(SSNoNamespace.size, size);
                 vector.Add(
                     new XElement(VT.lpstr, worksheetData.Name));
@@ -376,7 +377,7 @@ namespace OpenXmlPowerTools
                             break;
                         case CellDataType.Date:
                             xw.WriteStartAttribute("t");
-                            xw.WriteValue("d");
+                            xw.WriteValue("n");
                             xw.WriteEndAttribute();
                             break;
                         case CellDataType.Number:
@@ -398,7 +399,10 @@ namespace OpenXmlPowerTools
                     if (cell.Value != null)
                     {
                         xw.WriteStartElement("v", ns);
-                        xw.WriteValue(cell.Value);
+                        if (cell.CellDataType == CellDataType.Date && cell.Value != null)
+                            xw.WriteValue(((DateTime)cell.Value).ToOADate());
+                        else
+                            xw.WriteValue(cell.Value);
                         xw.WriteEndElement();
                     }
                     xw.WriteEndElement();
@@ -501,7 +505,7 @@ namespace OpenXmlPowerTools
                 sXDoc.Root.Add(fonts);
                 return 0;
             }
-            XElement font = new XElement(S.font,
+            XElement font = new (S.font,
                 cell.Bold == true ? new XElement(S.b) : null,
                 cell.Italic == true ? new XElement(S.i) : null);
             fonts.Add(font);
@@ -567,7 +571,7 @@ namespace OpenXmlPowerTools
                 .Element(S.fonts)
                 .Elements(S.font)
                 .ElementAt(fontId);
-            XElement fabFont = new XElement(S.font,
+            XElement fabFont = new (S.font,
                 cell.Bold == true ? new XElement(S.b) : null,
                 cell.Italic == true ? new XElement(S.i) : null);
             bool match = XNode.DeepEquals(font, fabFont);

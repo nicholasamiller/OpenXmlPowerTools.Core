@@ -50,14 +50,12 @@ namespace OpenXmlPowerTools
         {
             color = null;
 
-            if (formatCode == null)
-                formatCode = "General";
+            formatCode ??= "General";
 
             var splitFormatCode = formatCode.Split(';');
             if (splitFormatCode.Length == 1)
             {
-                double dv;
-                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out dv))
+                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double dv))
                 {
                     return FormatDouble(formatCode, dv, out color);
                 }
@@ -117,7 +115,7 @@ namespace OpenXmlPowerTools
             return value;
         }
 
-        static Regex UnderRegex = new Regex("_.");
+        static readonly Regex UnderRegex = new ("_.");
 
         // The following Regex transforms currency specifies into a character / string
         // that string.Format can use to properly produce the correct text.
@@ -125,7 +123,7 @@ namespace OpenXmlPowerTools
         // "[$€-2]"      => "€"
         // "[$¥-804]"    => "¥
         // "[$CHF-100C]" => "CHF"
-        static string s_CurrRegex = @"\[\$(?<curr>.*-).*\]";
+        static readonly string s_CurrRegex = @"\[\$(?<curr>.*-).*\]";
 
         private static string ConvertFormatCode(string formatCode)
         {
@@ -159,19 +157,17 @@ namespace OpenXmlPowerTools
         {
             color = null;
             var trimmed = formatCode.Trim();
-            if (trimmed.StartsWith("[") &&
-                trimmed.Contains("]"))
+            if (trimmed.StartsWith("[") && trimmed.Contains(']'))
             {
                 var colorLen = trimmed.IndexOf(']');
-                color = trimmed.Substring(1, colorLen - 1);
+                color = trimmed[1..colorLen];
                 if (ValidColors.Contains(color) ||
                     color.StartsWith("Color"))
                 {
                     if (color.StartsWith("Color"))
                     {
-                        var idxStr = color.Substring(5);
-                        int colorIdx;
-                        if (int.TryParse(idxStr, out colorIdx))
+                        var idxStr = color[5..];
+                        if (int.TryParse(idxStr, out int colorIdx))
                         {
                             if (colorIdx < SmlDataRetriever.IndexedColors.Length)
                                 color = SmlDataRetriever.IndexedColors[colorIdx];
@@ -224,7 +220,7 @@ namespace OpenXmlPowerTools
                 var s = dv.ToString(fc.FormatCode, CultureInfo.InvariantCulture).Trim();
                 return s;
             }
-            if ((cfc.Contains('(') && cfc.Contains(')')) || cfc.Contains('-'))
+            if ((cfc.Contains('(') && cfc.Contains(')')) || (cfc.Contains('-') && dv != 0))
             {
                 var s3 = (-dv).ToString(cfc, CultureInfo.InvariantCulture).Trim();
                 return s3;

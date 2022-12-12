@@ -66,8 +66,7 @@ namespace OpenXmlPowerTools
 
         public static XElement RetrieveRange(SpreadsheetDocument sDoc, string sheetName, string range)
         {
-            int leftColumn, topRow, rightColumn, bottomRow;
-            XlsxTables.ParseRange(range, out leftColumn, out topRow, out rightColumn, out bottomRow);
+            XlsxTables.ParseRange(range, out int leftColumn, out int topRow, out int rightColumn, out int bottomRow);
             return RetrieveRange(sDoc, sheetName, leftColumn, topRow, rightColumn, bottomRow);
         }
 
@@ -131,8 +130,7 @@ namespace OpenXmlPowerTools
                     string ra = (string)row.Attribute("r");
                     if (ra == null)
                         return null;
-                    int rowNbr;
-                    if (!int.TryParse(ra, out rowNbr))
+                    if (!int.TryParse(ra, out int rowNbr))
                         return null;
                     if (rowNbr < topRow)
                         return null;
@@ -158,13 +156,11 @@ namespace OpenXmlPowerTools
                             string sharedString = null;
                             if (cellType == "s")
                             {
-                                int sharedStringIndex;
                                 string sharedStringBeforeParsing = (string)cell.Element(S.v);
-                                if (sharedStringBeforeParsing == null)
-                                    sharedStringBeforeParsing = (string)cell.Elements(S._is).Elements(S.t).FirstOrDefault();
+                                sharedStringBeforeParsing ??= (string)cell.Elements(S._is).Elements(S.t).FirstOrDefault();
                                 if (sharedStringBeforeParsing == null)
                                     throw new FileFormatException("Invalid document");
-                                if (!int.TryParse(sharedStringBeforeParsing, out sharedStringIndex))
+                                if (!int.TryParse(sharedStringBeforeParsing, out int sharedStringIndex))
                                     throw new FileFormatException("Invalid document");
                                 XElement sharedStringElement = null;
                                 if (sharedStringTable == null)
@@ -197,7 +193,7 @@ namespace OpenXmlPowerTools
                                         out color);
                                 else
                                     displayValue = value;
-                                XElement newCell1 = new XElement("Cell",
+                                XElement newCell1 = new ("Cell",
                                     new XAttribute("Ref", (string)cell.Attribute("r")),
                                     new XAttribute("ColumnId", columnAddress),
                                     new XAttribute("ColumnNumber", columnIndex),
@@ -214,7 +210,7 @@ namespace OpenXmlPowerTools
                             else
                             {
                                 var type = (string)cell.Attribute("t");
-                                XElement value = new XElement("Value", cell.Value);
+                                XElement value = new ("Value", cell.Value);
                                 if (type != null && type == "inlineStr")
                                 {
                                     type = "s";
@@ -232,11 +228,11 @@ namespace OpenXmlPowerTools
                                         cell.Value,
                                         out color);
                                 else
-                                    displayValue = displayValue = SmlCellFormatter.FormatCell(
-                                        (string)"General",
+                                    displayValue = SmlCellFormatter.FormatCell(
+                                        "General",
                                         cell.Value,
                                         out color);
-                                XElement newCell2 = new XElement("Cell",
+                                XElement newCell2 = new ("Cell",
                                     new XAttribute("Ref", (string)cell.Attribute("r")),
                                     new XAttribute("ColumnId", columnAddress),
                                     new XAttribute("ColumnNumber", columnIndex),

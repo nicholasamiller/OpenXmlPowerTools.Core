@@ -1,8 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using DocumentFormat.OpenXml.Office2010.PowerPoint;
 using DocumentFormat.OpenXml.Packaging;
+using System.Diagnostics;
 using System.Xml.Linq;
+using System.Linq;
 
 namespace OpenXmlPowerTools
 {
@@ -66,28 +69,20 @@ namespace OpenXmlPowerTools
     {
         public static void BuildPresentation(List<SlideSource> sources, string fileName)
         {
-            using (OpenXmlMemoryStreamDocument streamDoc = OpenXmlMemoryStreamDocument.CreatePresentationDocument())
-            {
-                using (PresentationDocument output = streamDoc.GetPresentationDocument())
-                {
-                    BuildPresentation(sources, output);
-                    output.Close();
-                }
-                streamDoc.GetModifiedDocument().SaveAs(fileName);
-            }
+            using var streamDoc = OpenXmlMemoryStreamDocument.CreatePresentationDocument();
+            using var output = streamDoc.GetPresentationDocument();
+            BuildPresentation(sources, output);
+            output.Close();
+            streamDoc.GetModifiedDocument().SaveAs(fileName);
         }
 
         public static PmlDocument BuildPresentation(List<SlideSource> sources)
         {
-            using (OpenXmlMemoryStreamDocument streamDoc = OpenXmlMemoryStreamDocument.CreatePresentationDocument())
-            {
-                using (PresentationDocument output = streamDoc.GetPresentationDocument())
-                {
-                    BuildPresentation(sources, output);
-                    output.Close();
-                }
-                return streamDoc.GetModifiedPmlDocument();
-            }
+            using var streamDoc = OpenXmlMemoryStreamDocument.CreatePresentationDocument();
+            using var output = streamDoc.GetPresentationDocument();
+            BuildPresentation(sources, output);
+            output.Close();
+            return streamDoc.GetModifiedPmlDocument();
         }
 
         private static void BuildPresentation(List<SlideSource> sources, PresentationDocument output)
@@ -124,39 +119,36 @@ namespace OpenXmlPowerTools
                     { Plegacy.textdata,   new [] { XName.Get("id") }},
                 };
 
-            List<ImageData> images = new List<ImageData>();
-            List<MediaData> mediaList = new List<MediaData>();
+            List<ImageData> images = new();
+            List<MediaData> mediaList = new();
             XDocument mainPart = output.PresentationPart.GetXDocument();
             mainPart.Declaration.Standalone = "yes";
             mainPart.Declaration.Encoding = "UTF-8";
             output.PresentationPart.PutXDocument();
 
-            using (OpenXmlMemoryStreamDocument streamDoc = new OpenXmlMemoryStreamDocument(sources[0].PmlDocument))
-            using (PresentationDocument doc = streamDoc.GetPresentationDocument())
-            {
-                CopyStartingParts(doc, output);
-            }
+            using var streamDoc = new OpenXmlMemoryStreamDocument(sources[0].PmlDocument);
+            using var doc = streamDoc.GetPresentationDocument();
+            CopyStartingParts(doc, output);
+            doc.Close();
 
             int sourceNum = 0;
             SlideMasterPart currentMasterPart = null;
             foreach (SlideSource source in sources)
             {
-                using (OpenXmlMemoryStreamDocument streamDoc = new OpenXmlMemoryStreamDocument(source.PmlDocument))
-                using (PresentationDocument doc = streamDoc.GetPresentationDocument())
+                using var sDoc = new OpenXmlMemoryStreamDocument(source.PmlDocument);
+                using var pDoc = sDoc.GetPresentationDocument();
+                try
                 {
-                    try
-                    {
-                        if (sourceNum == 0)
-                            CopyPresentationParts(doc, output, images, mediaList);
-                        currentMasterPart = AppendSlides(doc, output, source.Start, source.Count, source.KeepMaster, images, currentMasterPart, mediaList);
-                    }
-                    catch (PresentationBuilderInternalException dbie)
-                    {
-                        if (dbie.Message.Contains("{0}"))
-                            throw new PresentationBuilderException(string.Format(dbie.Message, sourceNum));
-                        else
-                            throw dbie;
-                    }
+                    if (sourceNum == 0)
+                        CopyPresentationParts(pDoc, output, images, mediaList);
+                    currentMasterPart = AppendSlides(pDoc, output, source.Start, source.Count, source.KeepMaster, images, currentMasterPart, mediaList);
+                }
+                catch (PresentationBuilderInternalException dbie)
+                {
+                    if (dbie.Message.Contains("{0}"))
+                        throw new PresentationBuilderException(string.Format(dbie.Message, sourceNum));
+                    else
+                        throw dbie;
                 }
                 sourceNum++;
             }
@@ -201,7 +193,7 @@ namespace OpenXmlPowerTools
             ExtendedFilePropertiesPart extPart = sourceDocument.ExtendedFilePropertiesPart;
             if (extPart != null)
             {
-                OpenXmlPart newPart = newDocument.AddExtendedFilePropertiesPart();
+                newDocument.AddExtendedFilePropertiesPart();
                 XDocument newXDoc = newDocument.ExtendedFilePropertiesPart.GetXDocument();
                 newXDoc.Declaration.Standalone = "yes";
                 newXDoc.Declaration.Encoding = "UTF-8";
@@ -251,7 +243,7 @@ namespace OpenXmlPowerTools
             // Copy Font Parts
             if (oldPresentationDoc.Root.Element(P.embeddedFontLst) != null)
             {
-                XElement newFontLst = new XElement(P.embeddedFontLst);
+                XElement newFontLst = new(P.embeddedFontLst);
                 foreach (var font in oldPresentationDoc.Root.Element(P.embeddedFontLst).Elements(P.embeddedFont))
                 {
                     XElement newRegular = null, newBold = null, newItalic = null, newBoldItalic = null;
@@ -263,7 +255,7 @@ namespace OpenXmlPowerTools
                         newItalic = CreatedEmbeddedFontPart(sourceDocument, newDocument, font, P.italic);
                     if (font.Element(P.boldItalic) != null)
                         newBoldItalic = CreatedEmbeddedFontPart(sourceDocument, newDocument, font, P.boldItalic);
-                    XElement newEmbeddedFont = new XElement(P.embeddedFont,
+                    XElement newEmbeddedFont = new(P.embeddedFont,
                         font.Elements(P.font),
                         newRegular,
                         newBold,
@@ -331,7 +323,8 @@ namespace OpenXmlPowerTools
             foreach (var legacyDocTextInfo in sourceDocument.PresentationPart.Parts.Where(p => p.OpenXmlPart.RelationshipType == "http://schemas.microsoft.com/office/2006/relationships/legacyDocTextInfo"))
             {
                 LegacyDiagramTextInfoPart newPart = newDocument.PresentationPart.AddNewPart<LegacyDiagramTextInfoPart>();
-                newPart.FeedData(legacyDocTextInfo.OpenXmlPart.GetStream());
+                using var ls = legacyDocTextInfo.OpenXmlPart.GetStream();
+                newPart.FeedData(ls);
             }
 
             var listOfRootChildren = newPresentation.Root.Elements().ToList();
@@ -378,7 +371,8 @@ namespace OpenXmlPowerTools
                 fpt = FontPartType.FontOdttf;
             var newId = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
             var newFontPart = newDocument.PresentationPart.AddFontPart(fpt, newId);
-            newFontPart.FeedData(oldFontPart.GetStream());
+            using var os = oldFontPart.GetStream();
+            newFontPart.FeedData(os);
             newRegular = new XElement(fontXName,
                 new XAttribute(R.id, newId));
             return newRegular;
@@ -395,7 +389,7 @@ namespace OpenXmlPowerTools
             if (ids.Any())
                 newID = ids.Max() + 1;
             var slideList = sourceDocument.PresentationPart.GetXDocument().Root.Descendants(P.sldId);
-            if (slideList.Count() == 0 && (currentMasterPart == null || keepMaster))
+            if (!slideList.Any() && (currentMasterPart == null || keepMaster))
             {
                 var slideMasterPart = sourceDocument.PresentationPart.SlideMasterParts.FirstOrDefault();
                 if (slideMasterPart != null)
@@ -403,7 +397,7 @@ namespace OpenXmlPowerTools
                 return currentMasterPart;
             }
             while (count > 0 && start < slideList.Count())
-            {
+            {                
                 SlidePart slide = (SlidePart)sourceDocument.PresentationPart.GetPartById(slideList.ElementAt(start).Attribute(R.id).Value);
                 if (currentMasterPart == null || keepMaster)
                     currentMasterPart = CopyMasterSlide(sourceDocument, slide.SlideLayoutPart.SlideMasterPart, newDocument, newPresentation, images, mediaList);
@@ -803,14 +797,12 @@ namespace OpenXmlPowerTools
                         else if (newContentPart is SlidePart)
                             newPart = ((SlidePart)newContentPart).AddEmbeddedPackagePart(oldPart.ContentType);
                     }
-                    using (Stream oldObject = oldPart.GetStream(FileMode.Open, FileAccess.Read))
-                    using (Stream newObject = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                    {
-                        int byteCount;
-                        byte[] buffer = new byte[65536];
-                        while ((byteCount = oldObject.Read(buffer, 0, 65536)) != 0)
-                            newObject.Write(buffer, 0, byteCount);
-                    }
+                    using var oldObject = oldPart.GetStream(FileMode.Open, FileAccess.Read);
+                    using var newObject = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
+                    int byteCount;
+                    byte[] buffer = new byte[65536];
+                    while ((byteCount = oldObject.Read(buffer, 0, 65536)) != 0)
+                        newObject.Write(buffer, 0, byteCount);
                     oleReference.Attribute(R.id).Value = newContentPart.GetIdOfPart(newPart);
                 }
                 else
@@ -838,7 +830,7 @@ namespace OpenXmlPowerTools
                 var oldPartIdPair2 = oldContentPart.Parts.FirstOrDefault(p => p.RelationshipId == relId);
                 if (oldPartIdPair2 != null)
                 {
-                    ChartPart oldPart = oldPartIdPair2.OpenXmlPart as ChartPart;
+                    var oldPart = oldPartIdPair2.OpenXmlPart as ChartPart;
                     if (oldPart != null)
                     {
                         XDocument oldChart = oldPart.GetXDocument();
@@ -869,7 +861,7 @@ namespace OpenXmlPowerTools
                 var oldPartIdPair3 = oldContentPart.Parts.FirstOrDefault(p => p.RelationshipId == relId);
                 if (oldPartIdPair3 != null)
                 {
-                    ChartDrawingPart oldPart = oldPartIdPair3.OpenXmlPart as ChartDrawingPart;
+                    var oldPart = oldPartIdPair3.OpenXmlPart as ChartDrawingPart;
                     if (oldPart != null)
                     {
                         XDocument oldXDoc = oldPart.GetXDocument();
@@ -900,7 +892,7 @@ namespace OpenXmlPowerTools
                 var oldPartIdPair4 = oldContentPart.Parts.FirstOrDefault(p => p.RelationshipId == relId);
                 if (oldPartIdPair4 != null)
                 {
-                    UserDefinedTagsPart oldPart = oldPartIdPair4.OpenXmlPart as UserDefinedTagsPart;
+                    var oldPart = oldPartIdPair4.OpenXmlPart as UserDefinedTagsPart;
                     if (oldPart != null)
                     {
                         XDocument oldXDoc = oldPart.GetXDocument();
@@ -926,12 +918,14 @@ namespace OpenXmlPowerTools
                 if (oldPartIdPair9 != null)
                 {
                     CustomXmlPart newPart = newDocument.PresentationPart.AddCustomXmlPart(CustomXmlPartType.CustomXml);
-                    newPart.FeedData(oldPartIdPair9.OpenXmlPart.GetStream());
+                    using var fs = oldPartIdPair9.OpenXmlPart.GetStream();
+                    newPart.FeedData(fs);
                     foreach (var itemProps in oldPartIdPair9.OpenXmlPart.Parts.Where(p => p.OpenXmlPart.ContentType == "application/vnd.openxmlformats-officedocument.customXmlProperties+xml"))
                     {
                         var newId2 = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
                         CustomXmlPropertiesPart cxpp = newPart.AddNewPart<CustomXmlPropertiesPart>("application/vnd.openxmlformats-officedocument.customXmlProperties+xml", newId2);
-                        cxpp.FeedData(itemProps.OpenXmlPart.GetStream());
+                        using var fds = itemProps.OpenXmlPart.GetStream();
+                        cxpp.FeedData(fds);
                     }
                     var newId = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
                     newContentPart.CreateRelationshipToPart(newPart, newId);
@@ -1346,7 +1340,8 @@ namespace OpenXmlPowerTools
                 var ct = oldPart.ContentType;
                 var ext = Path.GetExtension(oldPart.Uri.OriginalString);
                 MediaDataPart newPart = newContentPart.OpenXmlPackage.CreateMediaDataPart(ct, ext);
-                newPart.FeedData(oldPart.GetStream());
+                using var fs = oldPart.GetStream();
+                newPart.FeedData(fs);
                 string id = null;
                 string relationshipType = null;
 
@@ -1354,12 +1349,14 @@ namespace OpenXmlPowerTools
                 {
                     MediaReferenceRelationship mrr = null;
 
-                    if (newContentPart is SlidePart)
-                        mrr = ((SlidePart)newContentPart).AddMediaReferenceRelationship(newPart);
-                    else if (newContentPart is SlideLayoutPart)
-                        mrr = ((SlideLayoutPart)newContentPart).AddMediaReferenceRelationship(newPart);
-                    else if (newContentPart is SlideMasterPart)
-                        mrr = ((SlideMasterPart)newContentPart).AddMediaReferenceRelationship(newPart);
+                    if (newContentPart is not SlidePart)
+                    {
+                        if (newContentPart is SlideLayoutPart)
+                            mrr = ((SlideLayoutPart)newContentPart).AddMediaReferenceRelationship(newPart);
+                        else if (newContentPart is SlideMasterPart)
+                            mrr = ((SlideMasterPart)newContentPart).AddMediaReferenceRelationship(newPart);
+                    }
+                    else mrr = ((SlidePart)newContentPart).AddMediaReferenceRelationship(newPart);
 
                     id = mrr.Id;
                     relationshipType = "http://schemas.microsoft.com/office/2007/relationships/media";
@@ -1483,10 +1480,10 @@ namespace OpenXmlPowerTools
 
             var oldPart = oldContentPart.GetPartById(relId);
 
-            var newId = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
+            var newId = "R" + Guid.NewGuid().ToString().Replace("-", "")[..16];
             CustomXmlPart newPart = newContentPart.AddNewPart<CustomXmlPart>("application/inkml+xml", newId);
-
-            newPart.FeedData(oldPart.GetStream());
+            using var fs = oldPart.GetStream();
+            newPart.FeedData(fs);
             contentPartReference.Attribute(attributeName).Value = newId;
         }
 
@@ -1504,8 +1501,8 @@ namespace OpenXmlPowerTools
 
             var newId = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
             EmbeddedControlPersistencePart newPart = newContentPart.AddNewPart<EmbeddedControlPersistencePart>("application/vnd.ms-office.activeX+xml", newId);
-
-            newPart.FeedData(oldPart.GetStream());
+            using var fs = oldPart.GetStream();
+            newPart.FeedData(fs);
             activeXPartReference.Attribute(attributeName).Value = newId;
 
             if (newPart.ContentType == "application/vnd.ms-office.activeX+xml")
@@ -1517,8 +1514,8 @@ namespace OpenXmlPowerTools
 
                     var newId2 = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
                     EmbeddedControlPersistenceBinaryDataPart newPersistencePart = newPart.AddNewPart<EmbeddedControlPersistenceBinaryDataPart>("application/vnd.ms-office.activeX", newId2);
-
-                    newPersistencePart.FeedData(oldPersistencePart.GetStream());
+                    using var ods = oldPersistencePart.GetStream();
+                    newPersistencePart.FeedData(ods);
                     axc.Root.Attribute(R.id).Value = newId2;
                     newPart.PutXDocument();
                 }
@@ -1539,8 +1536,8 @@ namespace OpenXmlPowerTools
 
             var newId = "R" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
             LegacyDiagramTextPart newPart = newContentPart.AddNewPart<LegacyDiagramTextPart>(newId);
-
-            newPart.FeedData(oldPart.GetStream());
+            using var fs = oldPart.GetStream();
+            newPart.FeedData(fs);
             textdataReference.Attribute(attributeName).Value = newId;
         }
 
@@ -1710,7 +1707,8 @@ namespace OpenXmlPowerTools
                     newPart = ((XmlSignaturePart)newContentPart).AddExtendedPart(oldPart.RelationshipType, oldPart.ContentType, fileInfo.Extension);
 
                 relId = newContentPart.GetIdOfPart(newPart);
-                newPart.FeedData(oldPart.GetStream());
+                using var fs = oldPart.GetStream();
+                newPart.FeedData(fs);
                 extendedReference.Attribute(attributeName).Value = relId;
             }
             catch (ArgumentOutOfRangeException)
@@ -1732,7 +1730,7 @@ namespace OpenXmlPowerTools
         // General function for handling images that tries to use an existing image if they are the same
         private static ImageData ManageImageCopy(ImagePart oldImage, OpenXmlPart newContentPart, List<ImageData> images)
         {
-            ImageData oldImageData = new ImageData(oldImage);
+            ImageData oldImageData = new(oldImage);
             foreach (ImageData item in images)
             {
                 if (item.Compare(oldImageData))
@@ -1745,12 +1743,10 @@ namespace OpenXmlPowerTools
         // General function for handling media that tries to use an existing media item if they are the same
         private static MediaData ManageMediaCopy(DataPart oldMedia, List<MediaData> mediaList)
         {
-            MediaData oldMediaData = new MediaData(oldMedia);
-            foreach (MediaData item in mediaList)
-            {
-                if (item.Compare(oldMediaData))
-                    return item;
-            }
+            MediaData oldMediaData = new(oldMedia);
+            var exists = mediaList.Where(item => item.Compare(oldMediaData));
+            if (exists.Any())
+                return exists.First();
             mediaList.Add(oldMediaData);
             return oldMediaData;
         }
@@ -1774,7 +1770,8 @@ namespace OpenXmlPowerTools
             {
                 AudioReferenceRelationship temp = (AudioReferenceRelationship)oldContentPart.GetReferenceRelationship(relId);
                 MediaDataPart newSound = newDocument.CreateMediaDataPart(temp.DataPart.ContentType);
-                newSound.FeedData(temp.DataPart.GetStream());
+                using var ts = temp.DataPart.GetStream();
+                newSound.FeedData(ts);
                 AudioReferenceRelationship newRel = null;
 
                 if (newContentPart is SlidePart)
@@ -1795,7 +1792,8 @@ namespace OpenXmlPowerTools
             {
                 MediaReferenceRelationship temp = (MediaReferenceRelationship)oldContentPart.GetReferenceRelationship(relId);
                 MediaDataPart newSound = newDocument.CreateMediaDataPart(temp.DataPart.ContentType);
-                newSound.FeedData(temp.DataPart.GetStream());
+                using var ts = temp.DataPart.GetStream();
+                newSound.FeedData(ts);
                 MediaReferenceRelationship newRel = null;
 
                 if (newContentPart is SlidePart)

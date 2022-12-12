@@ -3210,7 +3210,6 @@ namespace OpenXmlPowerTools
                 sizeString.Length > 2 &&
                 sizeString[^2..] == "pt")
             {
-                IFormatProvider format = ;
                 if (float.TryParse(sizeString[..^2],
                     NumberStyles.Float | NumberStyles.AllowThousands,
                     CultureInfo.InvariantCulture, out float size))

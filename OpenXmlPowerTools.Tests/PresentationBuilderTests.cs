@@ -122,13 +122,12 @@ namespace OxPt
         public void PB006_VideoFormats()
         {
             // This presentation contains videos with content types video/mp4, video/quicktime, video/unknown, video/x-ms-asf, and video/x-msvideo.
-            DirectoryInfo sourceDir = new DirectoryInfo("../../../../TestFiles/");
-            FileInfo sourcePptx = new FileInfo(Path.Combine(sourceDir.FullName, "PP006-Videos.pptx"));
+            DirectoryInfo sourceDir = new("../../../../TestFiles/");
+            FileInfo sourcePptx = new(Path.Combine(sourceDir.FullName, "PP006-Videos.pptx"));
 
             var oldMediaDataContentTypes = GetMediaDataContentTypes(sourcePptx);
 
-            List<SlideSource> sources = null;
-            sources = new List<SlideSource>()
+            var sources = new List<SlideSource>()
             {
                 new SlideSource(new PmlDocument(sourcePptx.FullName), true),
             };

@@ -3350,14 +3350,14 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                         if (newContentPart is ChartPart)
                             newPart = ((ChartPart)newContentPart).AddEmbeddedPackagePart(oldPart.ContentType);
                     }
-                    using (Stream oldObject = oldPart.GetStream(FileMode.Open, FileAccess.Read))
-                    using (Stream newObject = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                    {
-                        int byteCount;
-                        byte[] buffer = new byte[65536];
-                        while ((byteCount = oldObject.Read(buffer, 0, 65536)) != 0)
-                            newObject.Write(buffer, 0, byteCount);
-                    }
+                    using var oldObject = oldPart.GetStream(FileMode.Open, FileAccess.Read);
+                    using var newObject = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
+
+                    int byteCount;
+                    byte[] buffer = new byte[65536];
+                    while ((byteCount = oldObject.Read(buffer, 0, 65536)) != 0)
+                        newObject.Write(buffer, 0, byteCount);
+
                     oleReference.Attribute(R.id).Value = newContentPart.GetIdOfPart(newPart);
                 }
                 else
@@ -3460,14 +3460,12 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                 FontPart oldPart = (FontPart)oldPart2;
                 FontPart newPart = newFontTablePart.AddFontPart(oldPart.ContentType);
                 var ResourceID = newFontTablePart.GetIdOfPart(newPart);
-                using (Stream oldFont = oldPart.GetStream(FileMode.Open, FileAccess.Read))
-                using (Stream newFont = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                {
-                    int byteCount;
-                    byte[] buffer = new byte[65536];
-                    while ((byteCount = oldFont.Read(buffer, 0, 65536)) != 0)
-                        newFont.Write(buffer, 0, byteCount);
-                }
+                using var oldFont = oldPart.GetStream(FileMode.Open, FileAccess.Read);
+                using var newFont = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
+                int byteCount;
+                byte[] buffer = new byte[65536];
+                while ((byteCount = oldFont.Read(buffer, 0, 65536)) != 0)
+                    newFont.Write(buffer, 0, byteCount);
                 fontReference.Attribute(R.id).Value = ResourceID;
             }
         }
@@ -3501,17 +3499,15 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                         EmbeddedObjectPart oldPart = (EmbeddedObjectPart)ipp1.OpenXmlPart;
                         var relType = oldRelatedPart.RelationshipType;
                         var conType = oldRelatedPart.ContentType;
-                        var g = new Guid();
+                        var g = Guid.NewGuid();
                         string id = $"R{g:N}".Substring(0, 8);
                         var newPart = newChart.AddExtendedPart(relType, conType, ".bin", id);
-                        using (Stream oldObject = oldPart.GetStream(FileMode.Open, FileAccess.Read))
-                        using (Stream newObject = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                        {
-                            int byteCount;
-                            byte[] buffer = new byte[65536];
-                            while ((byteCount = oldObject.Read(buffer, 0, 65536)) != 0)
-                                newObject.Write(buffer, 0, byteCount);
-                        }
+                        using var oldObject = oldPart.GetStream(FileMode.Open, FileAccess.Read);
+                        using var newObject = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
+                        int byteCount;
+                        byte[] buffer = new byte[65536];
+                        while ((byteCount = oldObject.Read(buffer, 0, 65536)) != 0)
+                            newObject.Write(buffer, 0, byteCount);
                         dataReference.Attribute(R.id).Value = newChart.GetIdOfPart(newPart);
                     }
                 }

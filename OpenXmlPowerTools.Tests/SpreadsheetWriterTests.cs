@@ -14,6 +14,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using Sw = OpenXmlPowerTools;
 using Xunit;
+using DocumentFormat.OpenXml;
 
 #if !ELIDE_XUNIT_TESTS
 
@@ -24,7 +25,7 @@ namespace OxPt
         [Fact]
         public void SW001_Simple()
         {
-            Sw.WorkbookDfn wb = new Sw.WorkbookDfn
+            Sw.WorkbookDfn wb = new ()
             {
                 Worksheets = new Sw.WorksheetDfn[]
                 {
@@ -104,7 +105,7 @@ namespace OxPt
         [Fact]
         public void SW002_AllDataTypes()
         {
-            Sw.WorkbookDfn wb = new Sw.WorkbookDfn
+            Sw.WorkbookDfn wb = new()
             {
                 Worksheets = new Sw.WorksheetDfn[]
                 {
@@ -180,7 +181,7 @@ namespace OxPt
                                     },
                                     new Sw.CellDfn {
                                         CellDataType = Sw.CellDataType.Number,
-                                        Value = (int)100,
+                                        Value = 100,
                                     },
                                 }
                             },
@@ -194,7 +195,7 @@ namespace OxPt
                                     },
                                     new Sw.CellDfn {
                                         CellDataType = Sw.CellDataType.Number,
-                                        Value = (int?)100,
+                                        Value = 100,
                                     },
                                 }
                             },
@@ -264,7 +265,7 @@ namespace OxPt
                                     },
                                     new Sw.CellDfn {
                                         CellDataType = Sw.CellDataType.Number,
-                                        Value = (double)123.45,
+                                        Value = 123.45,
                                     },
                                 }
                             },
@@ -287,9 +288,8 @@ namespace OxPt
                                 Cells = new Sw.CellDfn[]
                                 {
                                     new Sw.CellDfn {
-                                        CellDataType = Sw.CellDataType.Date,
-                                        Value = new DateTime(2012, 1, 8),
-                                        FormatCode = "mm-dd-yy",
+                                        CellDataType = Sw.CellDataType.String,
+                                        Value = "date",
                                     },
                                     new Sw.CellDfn {
                                         CellDataType = Sw.CellDataType.Date,
@@ -309,34 +309,30 @@ namespace OxPt
             Validate(outXlsx);
         }
 
-        private void Validate(FileInfo fi)
+        private static void Validate(FileInfo fi)
         {
-            using (SpreadsheetDocument sDoc = SpreadsheetDocument.Open(fi.FullName, true))
-            {
-                OpenXmlValidator v = new OpenXmlValidator();
-                var errors = v.Validate(sDoc).Where(ve => !s_ExpectedErrors.Contains(ve.Description));
+            using var sDoc = SpreadsheetDocument.Open(fi.FullName, true);
 
+            OpenXmlValidator v = new();
+            var errors = v.Validate(sDoc).Where(ve => !ExpectedErrors.Contains(ve.Description));
 #if false
-                // if a test fails validation post-processing, then can use this code to determine the SDK
-                // validation error(s).
-
-                if (errors.Count() != 0)
+            // if a test fails validation post-processing, then can use this code to determine the SDK
+            // validation error(s).
+            if (errors.Any())
+            {
+                StringBuilder sb = new ();
+                foreach (var item in errors)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    foreach (var item in errors)
-                    {
-                        sb.Append(item.Description).Append(Environment.NewLine);
-                    }
-                    var s = sb.ToString();
-                    Console.WriteLine(s);
+                    sb.Append(item.Description).Append(Environment.NewLine);
                 }
-#endif
-
-                Assert.Empty(errors);
+                var s = sb.ToString();
+                Console.WriteLine(s);
             }
+#endif
+            Assert.Empty(errors);
         }
 
-        private static List<string> s_ExpectedErrors = new List<string>()
+        private static readonly List<string> ExpectedErrors = new List<string>()
         {
             "The attribute 't' has invalid value 'd'. The Enumeration constraint failed.",
         };

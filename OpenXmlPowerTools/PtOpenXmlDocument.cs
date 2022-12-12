@@ -268,7 +268,7 @@ namespace OpenXmlPowerTools
         {
             if (FileName == null)
                 return "Unnamed Document";
-            FileInfo file = new FileInfo(FileName);
+            FileInfo file = new(FileName);
             return file.Name;
         }
 

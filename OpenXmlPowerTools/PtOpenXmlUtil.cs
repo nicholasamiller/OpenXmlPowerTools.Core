@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using DocumentFormat.OpenXml.Office2010.PowerPoint;
 using DocumentFormat.OpenXml.Packaging;
 using System.Drawing;
 using System.IO.Compression;
@@ -1899,11 +1900,9 @@ listSeparator
         public MediaData(DataPart part)
         {
             ContentType = part.ContentType;
-            using (Stream s = part.GetStream(FileMode.Open, FileAccess.Read))
-            {
-                Media = new byte[s.Length];
-                s.Read(Media, 0, (int)s.Length);
-            }
+            using var s = part.GetStream(FileMode.Open, FileAccess.Read);
+            Media = new byte[s.Length];
+            s.Read(Media, 0, (int)s.Length);
         }
 
         public void AddContentPartRelTypeResourceIdTupple(OpenXmlPart contentPart, string relationshipType, string relationshipId)
@@ -1919,8 +1918,8 @@ listSeparator
 
         public void WriteMedia(DataPart part)
         {
-            using (Stream s = part.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                s.Write(Media, 0, Media.GetUpperBound(0) + 1);
+            using var s = part.GetStream(FileMode.Create, FileAccess.ReadWrite);
+            s.Write(Media, 0, Media.GetUpperBound(0) + 1);
         }
 
         public bool Compare(MediaData arg)
