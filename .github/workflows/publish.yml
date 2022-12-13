@@ -43,8 +43,8 @@ jobs:
     - name: Build
       run: dotnet build $SOLUTION --configuration $BUILD_CONFIG -p:Version=1.0.1
 
-##    - name: Run tests
-##      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity $BUILD_VERSION
+    - name: Run tests
+      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity $BUILD_VERSION
 
     - name: PublishGit
       if: startsWith(github.ref, 'refs/heads/release')
