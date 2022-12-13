@@ -46,7 +46,7 @@ jobs:
       run: dotnet build $SOLUTION --configuration $BUILD_CONFIG -p:Version=$BUILD_VERSION
 
     - name: Run tests
-      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity $BUILD_VERSION
+      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity detailed
 
     - name: PublishGit
       if: startsWith(github.ref, 'refs/heads/release')
