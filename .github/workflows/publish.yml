@@ -41,7 +41,7 @@ jobs:
          7.0.x
          
     - name: Build
-      run: dotnet build $SOLUTION --configuration $BUILD_CONFIG -p:Version=$BUILD_VERSION
+      run: dotnet build $SOLUTION --configuration $BUILD_CONFIG -p:Version=1.0.1
 
 ##    - name: Run tests
 ##      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity minimal
