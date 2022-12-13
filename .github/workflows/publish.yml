@@ -44,12 +44,13 @@ jobs:
       run: dotnet build $SOLUTION --configuration $BUILD_CONFIG -p:Version=1.0.1
 
 ##    - name: Run tests
-##      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity minimal
+##      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity $BUILD_VERSION
 
     - name: PublishGit
+      if: startsWith(github.ref, 'refs/heads/release')
       run: |
            dotnet nuget add source --username sawcheg --password ${{ secrets.GIT_NUGET_SECRET }} --store-password-in-clear-text --name github 'https://nuget.pkg.github.com/sawcheg/index.json'
-           dotnet nuget push ./OpenXmlPowerTools/bin/$BUILD_CONFIG/$DLL_NAME.1.0.1.nupkg -s github -k ${{secrets.GIT_NUGET_SECRET}}
+           dotnet nuget push ./OpenXmlPowerTools/bin/$BUILD_CONFIG/$DLL_NAME.$BUILD_VERSION.nupkg -s github -k ${{secrets.GIT_NUGET_SECRET}}
       
     - name: PublishNuget
       if: startsWith(github.ref, 'refs/heads/release')
