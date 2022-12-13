@@ -6,12 +6,15 @@
 		<Authors>Microsoft, Eric White, Lionel Vallet, Alexander Solovey</Authors>
 		<RepositoryUrl>https://github.com/sawcheg/OpenXmlPowerTools.NetCore</RepositoryUrl>
 		<PackageId>OpenXmlPowerTools.NetCore</PackageId>
+		<PackageIcon>icon.png</PackageIcon>
 		<PackageTags>OpenXmlPowerTools, NET, OpenXML, Power, Tools</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageProjectUrl>https://github.com/sawcheg/OpenXmlPowerTools.NetCore</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Description>
 			Based on maintainer Lionel Vallet's vNext fork, includes .NET 6.0 and .NET 7.0 build target for use in cross-platform scenarios.
+			
+			For compatibility with .NET 7.0, the System.Drawing.Common library was replaced with the cross-platform SkiaSharp library.
 
 			The Open XML PowerTools provides guidance and example code for programming with Open XML Documents (DOCX, XLSX, and PPTX). It is based on, and extends the functionality of the Open XML SDK.
 
@@ -46,10 +49,8 @@
 	  <CodeAnalysisRuleSet />
 	</PropertyGroup>
 	<ItemGroup>
-		<None Include="..\README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
+		<None Include="..\README.md" Pack="true" PackagePath=""/>
+		<None Include="images\icon.png" Pack="true" Visible="false" PackagePath=""/>
 	</ItemGroup>
 
 	<ItemGroup>

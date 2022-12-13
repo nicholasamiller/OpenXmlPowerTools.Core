@@ -4,7 +4,7 @@ Actual [Nuget Package](https://www.nuget.org/packages/OpenXmlPowerTools.NetCore)
 
 As you know, Microsoft has archived this repository and does not maintain it. Current repo is created from the [LionelVallet/Open-Xml-PowerTools](https://github.com/LionelVallet/Open-Xml-PowerTools) project and configured to be used only in actual versions .NET
 
-In plans to refactor the code and replace the System.Drawing.Common library with a cross-platform one
+For compatibility with .NET 7.0, the System.Drawing.Common library was replaced with the cross-platform [SkiaSharp](https://github.com/mono/SkiaSharp) library.
 
 ---
 About OpenXmlPowerTools
