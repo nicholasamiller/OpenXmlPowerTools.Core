@@ -3098,7 +3098,7 @@ namespace OpenXmlPowerTools
             })
                 .where(function (f) { return f != null && f != ""; })
                 .distinct()
-                .select(function (f) { return new Pav.FontFamily(f); })
+                .select(function (f) { return new Pav.SKTypeface(f); })
                 .toArray();
             */
 

@@ -3,12 +3,10 @@
 
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
-using System.Drawing;
 using System.Globalization;
 using System.IO.Packaging;
 using System.Text;
 using System.Xml.Linq;
-using Graphics = System.Drawing.Graphics;
 
 namespace OpenXmlPowerTools
 {
@@ -93,14 +91,16 @@ namespace OpenXmlPowerTools
             return metrics;
         }
 
-        private static int _getTextWidth(FontFamily ff, FontStyle fs, decimal sz, string text)
+        private static int _getTextWidth(SKTypeface face, SKFontStyle style, decimal sz, string text)
         {
             try
             {
-                var f = new Font(ff, (float)sz / 2f, fs);
-                var proposedSize = new Size(int.MaxValue, int.MaxValue);
-                var sf = Graphics.FromImage(new Bitmap(1, 1)).MeasureString(text, f, proposedSize);
-                return (int)sf.Width;
+                var fs = SKFontManager.Default.MatchTypeface(face, style);
+                var font = new SKFont(fs, (float)sz / 2f);
+                var textPaint = new SKPaint(font);
+                SKRect textBounds = new ();
+                textPaint.MeasureText(text, ref textBounds);
+                return (int)Math.Floor(textBounds.Size.Width);                
             }
             catch
             {
@@ -108,32 +108,29 @@ namespace OpenXmlPowerTools
             }
         }
 
-        public static int GetTextWidth(FontFamily ff, FontStyle fs, decimal sz, string text)
+        public static int GetTextWidth(SKTypeface face, SKFontStyle style, decimal sz, string text)
         {
             try
             {
-                return _getTextWidth(ff, fs, sz, text);
+                return _getTextWidth(face, style, sz, text);
             }
             catch (ArgumentException)
             {
                 try
                 {
-                    const FontStyle fs2 = FontStyle.Regular;
-                    return _getTextWidth(ff, fs2, sz, text);
+                    return _getTextWidth(face, SKFontStyle.Normal, sz, text);
                 }
                 catch (ArgumentException)
                 {
-                    const FontStyle fs2 = FontStyle.Bold;
                     try
                     {
-                        return _getTextWidth(ff, fs2, sz, text);
+                        return _getTextWidth(face, SKFontStyle.Bold, sz, text);
                     }
                     catch (ArgumentException)
                     {
                         // if both regular and bold fail, then get metrics for Times New Roman
-                        // use the original FontStyle (in fs)
-                        var ff2 = new FontFamily("Times New Roman");
-                        return _getTextWidth(ff2, fs, sz, text);
+                        var ff2 = SKTypeface.FromFamilyName("Times New Roman");
+                        return _getTextWidth(ff2, style, sz, text);
                     }
                 }
             }

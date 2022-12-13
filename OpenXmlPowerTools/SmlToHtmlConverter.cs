@@ -221,24 +221,6 @@ namespace OpenXmlPowerTools
             return null;
         }
 
-        private static readonly HashSet<string> UnknownFonts = new HashSet<string>();
-        private static HashSet<string> _knownFamilies;
-
-        private static HashSet<string> KnownFamilies
-        {
-            get
-            {
-                if (_knownFamilies == null)
-                {
-                    _knownFamilies = new HashSet<string>();
-                    var families = FontFamily.Families;
-                    foreach (var fam in families)
-                        _knownFamilies.Add(fam.Name);
-                }
-                return _knownFamilies;
-            }
-        }
-
         private static readonly Dictionary<string, string> FontFallback = new Dictionary<string, string>()
         {
             { "Arial", @"'{0}', 'sans-serif'" },

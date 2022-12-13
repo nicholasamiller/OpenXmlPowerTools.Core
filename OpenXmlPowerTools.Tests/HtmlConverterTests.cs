@@ -5,18 +5,16 @@
 
 // DO_CONVERSION_VIA_WORD is defined in the project OpenXmlPowerTools.Tests.OA.csproj, but not in the OpenXmlPowerTools.Tests.csproj
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using OpenXmlPowerTools;
+using SkiaSharp;
 using Xunit;
+using System;
+using System.Diagnostics;
 
 #if DO_CONVERSION_VIA_WORD
 using Word = Microsoft.Office.Interop.Word;
@@ -89,11 +87,11 @@ namespace OxPt
         [InlineData("HC051-Shaded-Text-02.docx")]
         [InlineData("HC060-Image-with-Hyperlink.docx")]
         [InlineData("HC061-Hyperlink-in-Field.docx")]
-        
+
         public void HC001(string name)
         {
-            DirectoryInfo sourceDir = new DirectoryInfo("../../../../TestFiles/");
-            FileInfo sourceDocx = new FileInfo(Path.Combine(sourceDir.FullName, name));
+            DirectoryInfo sourceDir = new("../../../../TestFiles/");
+            FileInfo sourceDocx = new(Path.Combine(sourceDir.FullName, name));
 
 #if COPY_FILES_FOR_DEBUGGING
             var sourceCopiedToDestDocx = new FileInfo(Path.Combine(TestUtil.TempDir.FullName, sourceDocx.Name.Replace(".docx", "-1-Source.docx")));
@@ -119,8 +117,8 @@ namespace OxPt
         [InlineData("HC006-Test-01.docx")]
         public void HC002_NoCssClasses(string name)
         {
-            DirectoryInfo sourceDir = new DirectoryInfo("../../../../TestFiles/");
-            FileInfo sourceDocx = new FileInfo(Path.Combine(sourceDir.FullName, name));
+            DirectoryInfo sourceDir = new("../../../../TestFiles/");
+            FileInfo sourceDocx = new(Path.Combine(sourceDir.FullName, name));
 
             var oxPtConvertedDestHtml = new FileInfo(Path.Combine(TestUtil.TempDir.FullName, sourceDocx.Name.Replace(".docx", "-5-OxPt-No-CSS-Classes.html")));
             ConvertToHtmlNoCssClasses(sourceDocx, oxPtConvertedDestHtml);
@@ -178,188 +176,153 @@ namespace OxPt
         private static void ConvertToHtml(FileInfo sourceDocx, FileInfo destFileName)
         {
             byte[] byteArray = File.ReadAllBytes(sourceDocx.FullName);
-            using (MemoryStream memoryStream = new MemoryStream())
+            using var memoryStream = new MemoryStream();
+            memoryStream.Write(byteArray, 0, byteArray.Length);
+            using var wDoc = WordprocessingDocument.Open(memoryStream, true);
+            var outputDirectory = destFileName.Directory;
+            destFileName = new FileInfo(Path.Combine(outputDirectory.FullName, destFileName.Name));
+            var imageDirectoryName = string.Concat(destFileName.FullName.AsSpan(0, destFileName.FullName.Length - 5), "_files");
+            int imageCounter = 0;
+            var pageTitle = (string)wDoc.CoreFilePropertiesPart.GetXDocument().Descendants(DC.title).FirstOrDefault();
+            pageTitle ??= sourceDocx.FullName;
+
+            WmlToHtmlConverterSettings settings = new()
             {
-                memoryStream.Write(byteArray, 0, byteArray.Length);
-                using (WordprocessingDocument wDoc = WordprocessingDocument.Open(memoryStream, true))
+                PageTitle = pageTitle,
+                FabricateCssClasses = true,
+                CssClassPrefix = "pt-",
+                RestrictToSupportedLanguages = false,
+                RestrictToSupportedNumberingFormats = false,
+                ImageHandler = imageInfo =>
                 {
-                    var outputDirectory = destFileName.Directory;
-                    destFileName = new FileInfo(Path.Combine(outputDirectory.FullName, destFileName.Name));
-                    var imageDirectoryName = destFileName.FullName.Substring(0, destFileName.FullName.Length - 5) + "_files";
-                    int imageCounter = 0;
-                    var pageTitle = (string)wDoc.CoreFilePropertiesPart.GetXDocument().Descendants(DC.title).FirstOrDefault();
-                    if (pageTitle == null)
-                        pageTitle = sourceDocx.FullName;
+                    DirectoryInfo localDirInfo = new(imageDirectoryName);
+                    if (!localDirInfo.Exists)
+                        localDirInfo.Create();
+                    ++imageCounter;
+                    string extension = imageInfo.ContentType.Split('/')[1].ToLower();
+                    if (extension == "tiff")
+                        extension = "gif";
+                    else if (extension == "x-wmf")
+                        extension = "wmf";
+                    var imageFormat = StaticShared.ParseImageFormat(extension);
 
-                    WmlToHtmlConverterSettings settings = new WmlToHtmlConverterSettings()
+                    string imageFileName = imageDirectoryName + "/image" +
+                        imageCounter.ToString() + "." + extension;
+                    try
                     {
-                        PageTitle = pageTitle,
-                        FabricateCssClasses = true,
-                        CssClassPrefix = "pt-",
-                        RestrictToSupportedLanguages = false,
-                        RestrictToSupportedNumberingFormats = false,
-                        ImageHandler = imageInfo =>
+                        using var data = imageInfo.SKBitmap.Encode(imageFormat, 100);
+                        if (data == null)
                         {
-                            DirectoryInfo localDirInfo = new DirectoryInfo(imageDirectoryName);
-                            if (!localDirInfo.Exists)
-                                localDirInfo.Create();
-                            ++imageCounter;
-                            string extension = imageInfo.ContentType.Split('/')[1].ToLower();
-                            ImageFormat imageFormat = null;
-                            if (extension == "png")
-                            {
-                                // Convert png to jpeg.
-                                extension = "gif";
-                                imageFormat = ImageFormat.Gif;
-                            }
-                            else if (extension == "gif")
-                                imageFormat = ImageFormat.Gif;
-                            else if (extension == "bmp")
-                                imageFormat = ImageFormat.Bmp;
-                            else if (extension == "jpeg")
-                                imageFormat = ImageFormat.Jpeg;
-                            else if (extension == "tiff")
-                            {
-                                // Convert tiff to gif.
-                                extension = "gif";
-                                imageFormat = ImageFormat.Gif;
-                            }
-                            else if (extension == "x-wmf")
-                            {
-                                extension = "wmf";
-                                imageFormat = ImageFormat.Wmf;
-                            }
-
-                            // If the image format isn't one that we expect, ignore it,
-                            // and don't return markup for the link.
-                            if (imageFormat == null)
-                                return null;
-
-                            string imageFileName = imageDirectoryName + "/image" +
-                                imageCounter.ToString() + "." + extension;
-                            try
-                            {
-                                imageInfo.Bitmap.Save(imageFileName, imageFormat);
-                            }
-                            catch (System.Runtime.InteropServices.ExternalException)
-                            {
-                                return null;
-                            }
-                            XElement img = new XElement(Xhtml.img,
-                                new XAttribute(NoNamespace.src, imageFileName),
-                                imageInfo.ImgStyleAttribute,
-                                imageInfo.AltText != null ?
-                                    new XAttribute(NoNamespace.alt, imageInfo.AltText) : null);
-                            return img;
+#if DEBUG
+                            Debug.WriteLine($"Image {imageFileName} not converted!");
+#else
+                            Console.WriteLine($"Image {imageFileName} not converted!");
+#endif
+                            return null;
                         }
-                    };
-                    XElement html = WmlToHtmlConverter.ConvertToHtml(wDoc, settings);
-
-                    // Note: the xhtml returned by ConvertToHtmlTransform contains objects of type
-                    // XEntity.  PtOpenXmlUtil.cs define the XEntity class.  See
-                    // http://blogs.msdn.com/ericwhite/archive/2010/01/21/writing-entity-references-using-linq-to-xml.aspx
-                    // for detailed explanation.
-                    //
-                    // If you further transform the XML tree returned by ConvertToHtmlTransform, you
-                    // must do it correctly, or entities will not be serialized properly.
-
-                    var htmlString = html.ToString(SaveOptions.DisableFormatting);
-                    File.WriteAllText(destFileName.FullName, htmlString, Encoding.UTF8);
+                        using var stream = File.OpenWrite(imageFileName);
+                        data.SaveTo(stream);
+                    }
+                    catch (System.Runtime.InteropServices.ExternalException)
+                    {
+                        return null;
+                    }
+                    XElement img = new(Xhtml.img,
+                        new XAttribute(NoNamespace.src, imageFileName),
+                        imageInfo.ImgStyleAttribute,
+                        imageInfo.AltText != null ?
+                            new XAttribute(NoNamespace.alt, imageInfo.AltText) : null);
+                    return img;
                 }
-            }
+            };
+            XElement html = WmlToHtmlConverter.ConvertToHtml(wDoc, settings);
+
+            // Note: the xhtml returned by ConvertToHtmlTransform contains objects of type
+            // XEntity.  PtOpenXmlUtil.cs define the XEntity class.  See
+            // http://blogs.msdn.com/ericwhite/archive/2010/01/21/writing-entity-references-using-linq-to-xml.aspx
+            // for detailed explanation.
+            //
+            // If you further transform the XML tree returned by ConvertToHtmlTransform, you
+            // must do it correctly, or entities will not be serialized properly.
+
+            var htmlString = html.ToString(SaveOptions.DisableFormatting);
+            File.WriteAllText(destFileName.FullName, htmlString, Encoding.UTF8);
         }
 
         private static void ConvertToHtmlNoCssClasses(FileInfo sourceDocx, FileInfo destFileName)
         {
             byte[] byteArray = File.ReadAllBytes(sourceDocx.FullName);
-            using (MemoryStream memoryStream = new MemoryStream())
+            using var memoryStream = new MemoryStream();
+            memoryStream.Write(byteArray, 0, byteArray.Length);
+            using WordprocessingDocument wDoc = WordprocessingDocument.Open(memoryStream, true);
+            var outputDirectory = destFileName.Directory;
+            destFileName = new FileInfo(Path.Combine(outputDirectory.FullName, destFileName.Name));
+            var imageDirectoryName = destFileName.FullName[..^5] + "_files";
+            int imageCounter = 0;
+            var pageTitle = (string)wDoc.CoreFilePropertiesPart.GetXDocument().Descendants(DC.title).FirstOrDefault();
+            if (pageTitle == null)
+                pageTitle = sourceDocx.FullName;
+
+            WmlToHtmlConverterSettings settings = new()
             {
-                memoryStream.Write(byteArray, 0, byteArray.Length);
-                using (WordprocessingDocument wDoc = WordprocessingDocument.Open(memoryStream, true))
+                PageTitle = pageTitle,
+                FabricateCssClasses = false,
+                RestrictToSupportedLanguages = false,
+                RestrictToSupportedNumberingFormats = false,
+                ImageHandler = imageInfo =>
                 {
-                    var outputDirectory = destFileName.Directory;
-                    destFileName = new FileInfo(Path.Combine(outputDirectory.FullName, destFileName.Name));
-                    var imageDirectoryName = destFileName.FullName.Substring(0, destFileName.FullName.Length - 5) + "_files";
-                    int imageCounter = 0;
-                    var pageTitle = (string)wDoc.CoreFilePropertiesPart.GetXDocument().Descendants(DC.title).FirstOrDefault();
-                    if (pageTitle == null)
-                        pageTitle = sourceDocx.FullName;
+                    DirectoryInfo localDirInfo = new(imageDirectoryName);
+                    if (!localDirInfo.Exists)
+                        localDirInfo.Create();
+                    ++imageCounter;
+                    string extension = imageInfo.ContentType.Split('/')[1].ToLower();
+                    if (extension == "tiff")
+                        extension = "gif";
+                    else if (extension == "x-wmf")
+                        extension = "wmf";
+                    var imageFormat = StaticShared.ParseImageFormat(extension);
 
-                    WmlToHtmlConverterSettings settings = new ()
+                    string imageFileName = imageDirectoryName + "/image" +
+                        imageCounter.ToString() + "." + extension;
+                    try
                     {
-                        PageTitle = pageTitle,
-                        FabricateCssClasses = false,
-                        RestrictToSupportedLanguages = false,
-                        RestrictToSupportedNumberingFormats = false,
-                        ImageHandler = imageInfo =>
+                        using var data = imageInfo.SKBitmap.Encode(imageFormat, 100);
+                        if (data == null)
                         {
-                            DirectoryInfo localDirInfo = new DirectoryInfo(imageDirectoryName);
-                            if (!localDirInfo.Exists)
-                                localDirInfo.Create();
-                            ++imageCounter;
-                            string extension = imageInfo.ContentType.Split('/')[1].ToLower();
-                            ImageFormat imageFormat = null;
-                            if (extension == "png")
-                            {
-                                // Convert png to jpeg.
-                                extension = "gif";
-                                imageFormat = ImageFormat.Gif;
-                            }
-                            else if (extension == "gif")
-                                imageFormat = ImageFormat.Gif;
-                            else if (extension == "bmp")
-                                imageFormat = ImageFormat.Bmp;
-                            else if (extension == "jpeg")
-                                imageFormat = ImageFormat.Jpeg;
-                            else if (extension == "tiff")
-                            {
-                                // Convert tiff to gif.
-                                extension = "gif";
-                                imageFormat = ImageFormat.Gif;
-                            }
-                            else if (extension == "x-wmf")
-                            {
-                                extension = "wmf";
-                                imageFormat = ImageFormat.Wmf;
-                            }
-
-                            // If the image format isn't one that we expect, ignore it,
-                            // and don't return markup for the link.
-                            if (imageFormat == null)
-                                return null;
-
-                            string imageFileName = imageDirectoryName + "/image" +
-                                imageCounter.ToString() + "." + extension;
-                            try
-                            {
-                                imageInfo.Bitmap.Save(imageFileName, imageFormat);
-                            }
-                            catch (System.Runtime.InteropServices.ExternalException)
-                            {
-                                return null;
-                            }
-                            XElement img = new XElement(Xhtml.img,
-                                new XAttribute(NoNamespace.src, imageFileName),
-                                imageInfo.ImgStyleAttribute,
-                                imageInfo.AltText != null ?
-                                    new XAttribute(NoNamespace.alt, imageInfo.AltText) : null);
-                            return img;
+#if DEBUG
+                            Debug.WriteLine($"Image {imageFileName} not converted!");
+#else
+                            Console.WriteLine($"Image {imageFileName} not converted!");
+#endif
+                            return null;
                         }
-                    };
-                    XElement html = WmlToHtmlConverter.ConvertToHtml(wDoc, settings);
-
-                    // Note: the xhtml returned by ConvertToHtmlTransform contains objects of type
-                    // XEntity.  PtOpenXmlUtil.cs define the XEntity class.  See
-                    // http://blogs.msdn.com/ericwhite/archive/2010/01/21/writing-entity-references-using-linq-to-xml.aspx
-                    // for detailed explanation.
-                    //
-                    // If you further transform the XML tree returned by ConvertToHtmlTransform, you
-                    // must do it correctly, or entities will not be serialized properly.
-
-                    var htmlString = html.ToString(SaveOptions.DisableFormatting);
-                    File.WriteAllText(destFileName.FullName, htmlString, Encoding.UTF8);
+                        using var stream = File.OpenWrite(imageFileName);
+                        data.SaveTo(stream);
+                    }
+                    catch (System.Runtime.InteropServices.ExternalException)
+                    {
+                        return null;
+                    }
+                    XElement img = new(Xhtml.img,
+                        new XAttribute(NoNamespace.src, imageFileName),
+                        imageInfo.ImgStyleAttribute,
+                        imageInfo.AltText != null ?
+                            new XAttribute(NoNamespace.alt, imageInfo.AltText) : null);
+                    return img;
                 }
-            }
+            };
+            XElement html = WmlToHtmlConverter.ConvertToHtml(wDoc, settings);
+
+            // Note: the xhtml returned by ConvertToHtmlTransform contains objects of type
+            // XEntity.  PtOpenXmlUtil.cs define the XEntity class.  See
+            // http://blogs.msdn.com/ericwhite/archive/2010/01/21/writing-entity-references-using-linq-to-xml.aspx
+            // for detailed explanation.
+            //
+            // If you further transform the XML tree returned by ConvertToHtmlTransform, you
+            // must do it correctly, or entities will not be serialized properly.
+
+            var htmlString = html.ToString(SaveOptions.DisableFormatting);
+            File.WriteAllText(destFileName.FullName, htmlString, Encoding.UTF8);
         }
 
 #if DO_CONVERSION_VIA_WORD

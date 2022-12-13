@@ -404,14 +404,14 @@ AAAAAAAAAAAAAAAANi8AAGRvY1Byb3BzL2FwcC54bWxQSwUGAAAAAAwADAAJAwAA3DEAAAAA";
 
     public struct Emu
     {
-        public long m_Value;
-        public static int s_EmusPerInch = 914400;
+        public long MValue { get; set; }
+        public static int SEmusPerInch => 914400;
 
         public static Emu TwipsToEmus(long twips)
         {
             float v1 = (float)twips / 20f;
             float v2 = v1 / 72f;
-            float v3 = v2 * s_EmusPerInch;
+            float v3 = v2 * SEmusPerInch;
             long emus = (long)v3;
             return new Emu(emus);
         }
@@ -419,19 +419,19 @@ AAAAAAAAAAAAAAAANi8AAGRvY1Byb3BzL2FwcC54bWxQSwUGAAAAAAwADAAJAwAA3DEAAAAA";
         public static Emu PointsToEmus(double points)
         {
             double v1 = points / 72;
-            double v2 = v1 * s_EmusPerInch;
+            double v2 = v1 * SEmusPerInch;
             long emus = (long)v2;
             return new Emu(emus);
         }
 
         public Emu(long value)
         {
-            m_Value = value;
+            MValue = value;
         }
 
         public static implicit operator long(Emu e)
         {
-            return e.m_Value;
+            return e.MValue;
         }
 
         public static implicit operator Emu(long l)

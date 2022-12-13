@@ -1868,12 +1868,12 @@ namespace OpenXmlPowerTools.HtmlToWml
             BackgroundRepeat,
             BackgroundAttachment,
             BackgroundPosition,
-            FontStyle,
+            SKFontStyle,
             FontVarient,
             FontWeight,
             FontSize,
             LineHeight,
-            FontFamily,
+            SKTypeface,
             Length,
         };
 
@@ -2302,37 +2302,37 @@ namespace OpenXmlPowerTools.HtmlToWml
 
                 if (p.Name == "font")
                 {
-                    CssExpression fontStyle;
+                    CssExpression SKFontStyle;
                     CssExpression fontVarient;
                     CssExpression fontWeight;
                     CssExpression fontSize;
                     CssExpression lineHeight;
-                    CssExpression fontFamily;
+                    CssExpression SKTypeface;
                     if (p.Expression.Terms.Count() == 1 && p.Expression.Terms.First().Value == "inherit")
                     {
-                        fontStyle = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
+                        SKFontStyle = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
                         fontVarient = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
                         fontWeight = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
                         fontSize = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
                         lineHeight = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
-                        fontFamily = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
+                        SKTypeface = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "inherit", Type = CssTermType.String } } };
                     }
                     else
                     {
-                        fontStyle = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "normal", Type = CssTermType.String } } };
+                        SKFontStyle = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "normal", Type = CssTermType.String } } };
                         fontVarient = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "normal", Type = CssTermType.String } } };
                         fontWeight = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "normal", Type = CssTermType.String } } };
                         fontSize = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "medium", Type = CssTermType.String } } };
                         lineHeight = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "normal", Type = CssTermType.String } } };
-                        fontFamily = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "serif", Type = CssTermType.String } } };
-                        List<CssTerm> fontFamilyList = new List<CssTerm>();
+                        SKTypeface = new CssExpression { Terms = new List<CssTerm> { new CssTerm { Value = "serif", Type = CssTermType.String } } };
+                        List<CssTerm> SKTypefaceList = new List<CssTerm>();
                         foreach (var term in p.Expression.Terms)
                         {
                             CssDataType dataType = GetDatatypeFromFontTerm(term);
                             switch (dataType)
                             {
-                                case CssDataType.FontStyle:
-                                    fontStyle = new CssExpression { Terms = new List<CssTerm> { term } };
+                                case CssDataType.SKFontStyle:
+                                    SKFontStyle = new CssExpression { Terms = new List<CssTerm> { term } };
                                     break;
                                 case CssDataType.FontVarient:
                                     fontVarient = new CssExpression { Terms = new List<CssTerm> { term } };
@@ -2349,18 +2349,18 @@ namespace OpenXmlPowerTools.HtmlToWml
                                     else
                                         fontSize = new CssExpression { Terms = new List<CssTerm> { term } };
                                     break;
-                                case CssDataType.FontFamily:
-                                    fontFamilyList.Add(term);
+                                case CssDataType.SKTypeface:
+                                    SKTypefaceList.Add(term);
                                     break;
                             }
                         }
-                        if (fontFamilyList.Count > 0)
-                            fontFamily = new CssExpression { Terms = fontFamilyList };
+                        if (SKTypefaceList.Count > 0)
+                            SKTypeface = new CssExpression { Terms = SKTypefaceList };
                     }
                     Property fs = new Property
                     {
                         Name = "font-style",
-                        Expression = fontStyle,
+                        Expression = SKFontStyle,
                         HighOrderSort = p.HighOrderSort,
                         IdAttributesInSelector = p.IdAttributesInSelector,
                         ElementNamesInSelector = p.ElementNamesInSelector,
@@ -2415,7 +2415,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                     Property ff = new Property
                     {
                         Name = "font-family",
-                        Expression = fontFamily,
+                        Expression = SKTypeface,
                         HighOrderSort = p.HighOrderSort,
                         IdAttributesInSelector = p.IdAttributesInSelector,
                         ElementNamesInSelector = p.ElementNamesInSelector,
@@ -2643,7 +2643,7 @@ namespace OpenXmlPowerTools.HtmlToWml
             return CssDataType.ListStyleImage;
         }
 
-        private static string[] FontStyleValues = new[]
+        private static string[] SKFontStyleValues = new[]
         {
             "italic",
             "oblique",
@@ -2672,8 +2672,8 @@ namespace OpenXmlPowerTools.HtmlToWml
 
         private static CssDataType GetDatatypeFromFontTerm(CssTerm term)
         {
-            if (FontStyleValues.Contains(term.Value.ToLower()))
-                return CssDataType.FontStyle;
+            if (SKFontStyleValues.Contains(term.Value.ToLower()))
+                return CssDataType.SKFontStyle;
             if (FontVarientValues.Contains(term.Value.ToLower()))
                 return CssDataType.FontVarient;
             if (FontWeightValues.Contains(term.Value.ToLower()))
@@ -2688,7 +2688,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                 term.Unit == CssUnit.PX ||
                 term.Unit == CssUnit.Percent)
                 return CssDataType.Length;
-            return CssDataType.FontFamily;
+            return CssDataType.SKTypeface;
         }
 
         public class PropertyInfo

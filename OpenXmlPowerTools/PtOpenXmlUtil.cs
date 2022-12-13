@@ -624,25 +624,12 @@ namespace OpenXmlPowerTools
 
     public static class WordprocessingMLUtil
     {
-        private static HashSet<string> UnknownFonts = new HashSet<string>();
-        private static HashSet<string> KnownFamilies = null;
-
         public static int CalcWidthOfRunInTwips(XElement r)
         {
-            if (KnownFamilies == null)
-            {
-                KnownFamilies = new HashSet<string>();
-                var families = FontFamily.Families;
-                foreach (var fam in families)
-                    KnownFamilies.Add(fam.Name);
-            }
-
-            var fontName = (string)r.Attribute(PtOpenXml.pt + "FontName");
-            if (fontName == null)
-                fontName = (string)r.Ancestors(W.p).First().Attribute(PtOpenXml.pt + "FontName");
-            if (fontName == null)
-                throw new OpenXmlPowerToolsException("Internal Error, should have FontName attribute");
-            if (UnknownFonts.Contains(fontName))
+            var fontName = (string)r.Attribute(PtOpenXml.pt + "FontName")
+                 ?? (string)r.Ancestors(W.p).First().Attribute(PtOpenXml.pt + "FontName")
+                 ?? throw new OpenXmlPowerToolsException("Internal Error, should have FontName attribute");
+            if (StaticShared.UnknownFonts.Contains(fontName))
                 return 0;
 
             var rPr = r.Element(W.rPr);
@@ -660,29 +647,21 @@ namespace OpenXmlPowerTools
             var sz = szn.GetValueOrDefault();
 
             // unknown font families will throw ArgumentException, in which case just return 0
-            if (!KnownFamilies.Contains(fontName))
+            if (!StaticShared.KnownFamilies.Contains(fontName))
                 return 0;
             // in theory, all unknown fonts are found by the above test, but if not...
-            FontFamily ff;
+
+            SKTypeface ff;
             try
             {
-                ff = new FontFamily(fontName);
+                ff = SKTypeface.FromFamilyName(fontName);
             }
             catch (ArgumentException)
             {
-                UnknownFonts.Add(fontName);
-
+                StaticShared.UnknownFonts.Add(fontName);
                 return 0;
             }
-            FontStyle fs = FontStyle.Regular;
-            var bold = GetBoolProp(rPr, W.b) || GetBoolProp(rPr, W.bCs);
-            var italic = GetBoolProp(rPr, W.i) || GetBoolProp(rPr, W.iCs);
-            if (bold && !italic)
-                fs = FontStyle.Bold;
-            if (italic && !bold)
-                fs = FontStyle.Italic;
-            if (bold && italic)
-                fs = FontStyle.Bold | FontStyle.Italic;
+            SKFontStyle fs = rPr.GetFontStyle();
 
             var runText = r.DescendantsTrimmed(W.txbxContent)
                 .Where(e => e.Name == W.t)

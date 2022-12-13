@@ -1105,8 +1105,6 @@ namespace OpenXmlPowerTools.HtmlToWml
                 return lowerPriorityFont;
             if (lowerPriorityFont == null)
                 return higherPriorityFont;
-            if (higherPriorityFont == null && lowerPriorityFont == null)
-                return null;
 
             rFonts = new XElement(W.rFonts,
                 (higherPriorityFont.Attribute(W.ascii) != null || higherPriorityFont.Attribute(W.asciiTheme) != null) ?
@@ -1134,10 +1132,10 @@ namespace OpenXmlPowerTools.HtmlToWml
                (string)r.Ancestors(W.p).First().Attribute(PtOpenXml.FontName);
             if (fontName == null)
                 throw new OpenXmlPowerToolsException("Internal Error, should have FontName attribute");
-            if (UnknownFonts.Contains(fontName))
+            if (StaticShared.UnknownFonts.Contains(fontName))
                 return 0;
 
-            if (UnknownFonts.Contains(fontName))
+            if (StaticShared.UnknownFonts.Contains(fontName))
                 return null;
 
             var rPr = r.Element(W.rPr);
@@ -1147,27 +1145,22 @@ namespace OpenXmlPowerTools.HtmlToWml
             var sz = GetFontSize(r) ?? 22m;
 
             // unknown font families will throw ArgumentException, in which case just return 0
-            if (!KnownFamilies.Contains(fontName))
+            if (!StaticShared.KnownFamilies.Contains(fontName))
                 return 0;
 
             // in theory, all unknown fonts are found by the above test, but if not...
-            FontFamily ff;
+            SKTypeface ff;
             try
             {
-                ff = new FontFamily(fontName);
+                ff = SKTypeface.FromFamilyName(fontName);
             }
             catch (ArgumentException)
             {
-                UnknownFonts.Add(fontName);
-
+                StaticShared.UnknownFonts.Add(fontName);
                 return 0;
             }
 
-            var fs = FontStyle.Regular;
-            if (Util.GetBoolProp(rPr, W.b) == true || Util.GetBoolProp(rPr, W.bCs) == true)
-                fs |= FontStyle.Bold;
-            if (Util.GetBoolProp(rPr, W.i) == true || Util.GetBoolProp(rPr, W.iCs) == true)
-                fs |= FontStyle.Italic;
+            SKFontStyle fs = rPr.GetFontStyle();
 
             // Appended blank as a quick fix to accommodate &nbsp; that will get
             // appended to some layout-critical runs such as list item numbers.
@@ -1865,27 +1858,9 @@ namespace OpenXmlPowerTools.HtmlToWml
                 return FontType.EastAsia;
             }
             return FontType.HAnsi;
-        }
+        }     
 
-        private static readonly HashSet<string> UnknownFonts = new HashSet<string>();
-        private static HashSet<string> _knownFamilies;
-
-        private static HashSet<string> KnownFamilies
-        {
-            get
-            {
-                if (_knownFamilies == null)
-                {
-                    _knownFamilies = new HashSet<string>();
-                    var families = FontFamily.Families;
-                    foreach (var fam in families)
-                        _knownFamilies.Add(fam.Name);
-                }
-                return _knownFamilies;
-            }
-        }
-
-        private static HashSet<char> WeakAndNeutralDirectionalCharacters = new HashSet<char>() {
+        private readonly static HashSet<char> WeakAndNeutralDirectionalCharacters = new () {
             '0',
             '1',
             '2',
@@ -2129,7 +2104,7 @@ namespace OpenXmlPowerTools.HtmlToWml
             })
                 .where(function (f) { return f != null && f != ""; })
                 .distinct()
-                .select(function (f) { return new Pav.FontFamily(f); })
+                .select(function (f) { return new Pav.SKTypeface(f); })
                 .toArray();
             */
 
@@ -2164,7 +2139,7 @@ namespace OpenXmlPowerTools.HtmlToWml
             {
                 if (paraOrRun.Attribute(PtOpenXml.FontName) == null)
                 {
-                    XAttribute fta = new XAttribute(PtOpenXml.FontName, fontType.ToString());
+                    XAttribute fta = new (PtOpenXml.FontName, fontType.ToString());
                     paraOrRun.Add(fta);
                 }
                 else
@@ -2176,7 +2151,7 @@ namespace OpenXmlPowerTools.HtmlToWml
             {
                 if (paraOrRun.Attribute(PtOpenXml.LanguageType) == null)
                 {
-                    XAttribute lta = new XAttribute(PtOpenXml.LanguageType, languageType);
+                    XAttribute lta = new (PtOpenXml.LanguageType, languageType);
                     paraOrRun.Add(lta);
                 }
                 else
@@ -2257,7 +2232,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                 {
                     string textNodeString = GetDisplayText((XText)node, preserveWhiteSpace);
                     XElement rPr = GetRunProperties((XText)node, settings);
-                    XElement r = new XElement(W.r,
+                    XElement r = new (W.r,
                         rPr,
                         new XElement(W.t,
                             GetXmlSpaceAttribute(textNodeString),
@@ -2265,28 +2240,28 @@ namespace OpenXmlPowerTools.HtmlToWml
                     return r;
                 }
             }
-        }
+        }       
 
         private static XElement TransformImageToWml(XElement element, HtmlToWmlConverterSettings settings, WordprocessingDocument wDoc)
         {
             string srcAttribute = (string)element.Attribute(XhtmlNoNamespace.src);
-            byte[] ba = null;
-            Bitmap bmp = null;
+            SKBitmap bmp = null;
 
+            byte[] ba;
             if (srcAttribute.StartsWith("data:"))
             {
                 var semiIndex = srcAttribute.IndexOf(';');
                 var commaIndex = srcAttribute.IndexOf(',', semiIndex);
-                var base64 = srcAttribute.Substring(commaIndex + 1);
+                var base64 = srcAttribute[(commaIndex + 1)..];
                 ba = Convert.FromBase64String(base64);
                 using var ms = new MemoryStream(ba);
-                bmp = new Bitmap(ms);
+                bmp = SKBitmap.Decode(ms);
             }
             else
             {
                 try
                 {
-                    bmp = new Bitmap(settings.BaseUriForImages + "/" + srcAttribute);
+                    bmp = SKBitmap.Decode($"{settings.BaseUriForImages}/{srcAttribute}");
                 }
                 catch (ArgumentException)
                 {
@@ -2296,17 +2271,17 @@ namespace OpenXmlPowerTools.HtmlToWml
                 {
                     return null;
                 }
-                MemoryStream ms = new MemoryStream();
-                bmp.Save(ms, bmp.RawFormat);
-                ba = ms.ToArray();
+                if (bmp == null)
+                    return null;
+                ba = bmp.Bytes;
             }
 
             MainDocumentPart mdp = wDoc.MainDocumentPart;
             string rId = "R" + Guid.NewGuid().ToString().Replace("-", "");
             ImagePartType ipt = ImagePartType.Png;
             ImagePart newPart = mdp.AddImagePart(ipt, rId);
-            using (Stream s = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                s.Write(ba, 0, ba.GetUpperBound(0) + 1);
+            using var stream = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
+            stream.Write(ba, 0, ba.GetUpperBound(0) + 1);
 
             PictureId pid = wDoc.Annotation<PictureId>();
             if (pid == null)
@@ -2342,10 +2317,10 @@ namespace OpenXmlPowerTools.HtmlToWml
             return null;
         }
 
-        private static XElement GetImageAsInline(XElement element, HtmlToWmlConverterSettings settings, WordprocessingDocument wDoc, Bitmap bmp,
+        private static XElement GetImageAsInline(XElement element, HtmlToWmlConverterSettings settings, WordprocessingDocument wDoc, SKBitmap bmp,
             string rId, int pictureId, string pictureDescription)
         {
-            XElement inline = new XElement(WP.inline, // 20.4.2.8
+            XElement inline = new (WP.inline, // 20.4.2.8
                 new XAttribute(XNamespace.Xmlns + "wp", WP.wp.NamespaceName),
                 new XAttribute(NoNamespace.distT, 0),  // distance from top of image to text, in EMUs, no effect if the parent is inline
                 new XAttribute(NoNamespace.distB, 0),  // bottom
@@ -2359,10 +2334,10 @@ namespace OpenXmlPowerTools.HtmlToWml
             return inline;
         }
 
-        private static XElement GetImageAsAnchor(XElement element, HtmlToWmlConverterSettings settings, WordprocessingDocument wDoc, Bitmap bmp,
+        private static XElement GetImageAsAnchor(XElement element, HtmlToWmlConverterSettings settings, WordprocessingDocument wDoc, SKBitmap bmp,
             string rId, string floatValue, int pictureId, string pictureDescription)
         {
-            Emu minDistFromEdge = (long)(0.125 * Emu.s_EmusPerInch);
+            Emu minDistFromEdge = (long)(0.125 * Emu.SEmusPerInch);
             long relHeight = 251658240;  // z-order
 
             CssExpression marginTopProp = element.GetProp("margin-top");
@@ -2540,13 +2515,11 @@ namespace OpenXmlPowerTools.HtmlToWml
                 new XElement(W.noProof));
         }
 
-        private static SizeEmu GetImageSizeInEmus(XElement img, Bitmap bmp)
+        private static SizeEmu GetImageSizeInEmus(XElement img, SKBitmap bmp)
         {
-            double hres = bmp.HorizontalResolution;
-            double vres = bmp.VerticalResolution;
-            Size s = bmp.Size;
-            Emu cx = (long)((double)(s.Width / hres) * (double)Emu.s_EmusPerInch);
-            Emu cy = (long)((double)(s.Height / vres) * (double)Emu.s_EmusPerInch);
+            double res = bmp.BytesPerPixel;
+            Emu cx = (long)((double)bmp.Width / res * Emu.SEmusPerInch);
+            Emu cy = (long)((double)bmp.Height / res * Emu.SEmusPerInch);
 
             CssExpression width = img.GetProp("width");
             CssExpression height = img.GetProp("height");
@@ -2573,7 +2546,7 @@ namespace OpenXmlPowerTools.HtmlToWml
             return new SizeEmu(cx, cy);
         }
 
-        private static XElement GetImageExtent(XElement img, Bitmap bmp)
+        private static XElement GetImageExtent(XElement img, SKBitmap bmp)
         {
             SizeEmu szEmu = GetImageSizeInEmus(img, bmp);
             return new XElement(WP.extent,
@@ -2606,7 +2579,7 @@ namespace OpenXmlPowerTools.HtmlToWml
                     new XAttribute(NoNamespace.noChangeAspect, 1)));
         }
 
-        private static XElement GetGraphicForImage(XElement element, string rId, Bitmap bmp, int pictureId, string pictureDescription)
+        private static XElement GetGraphicForImage(XElement element, string rId, SKBitmap bmp, int pictureId, string pictureDescription)
         {
             SizeEmu szEmu = GetImageSizeInEmus(element, bmp);
             XElement graphic = new XElement(A.graphic,
@@ -2883,20 +2856,20 @@ namespace OpenXmlPowerTools.HtmlToWml
         private static XElement GetRunProperties(XElement element, HtmlToWmlConverterSettings settings)
         {
             CssExpression colorProperty = element.GetProp("color");
-            CssExpression fontFamilyProperty = element.GetProp("font-family");
+            CssExpression SKTypefaceProperty = element.GetProp("font-family");
             CssExpression fontSizeProperty = element.GetProp("font-size");
             CssExpression textDecorationProperty = element.GetProp("text-decoration");
-            CssExpression fontStyleProperty = element.GetProp("font-style");
+            CssExpression SKFontStyleProperty = element.GetProp("font-style");
             CssExpression fontWeightProperty = element.GetProp("font-weight");
             CssExpression backgroundColorProperty = element.GetProp("background-color");
             CssExpression letterSpacingProperty = element.GetProp("letter-spacing");
             CssExpression directionProp = element.GetProp("direction");
 
             string colorPropertyString = colorProperty.ToString();
-            string fontFamilyString = GetUsedFontFromFontFamilyProperty(fontFamilyProperty);
+            string SKTypefaceString = GetUsedFontFromSKTypefaceProperty(SKTypefaceProperty);
             TPoint? fontSizeTPoint = GetUsedSizeFromFontSizeProperty(fontSizeProperty);
             string textDecorationString = textDecorationProperty.ToString();
-            string fontStyleString = fontStyleProperty.ToString();
+            string SKFontStyleString = SKFontStyleProperty.ToString();
             string fontWeightString = fontWeightProperty.ToString().ToLower();
             string backgroundColorString = backgroundColorProperty.ToString().ToLower();
             string letterSpacingString = letterSpacingProperty.ToString().ToLower();
@@ -2930,12 +2903,12 @@ namespace OpenXmlPowerTools.HtmlToWml
                 subSuper = new XElement(W.vertAlign, new XAttribute(W.val, "superscript"));
 
             XElement rFonts = null;
-            if (fontFamilyString != null)
+            if (SKTypefaceString != null)
             {
                 rFonts = new XElement(W.rFonts,
-                    fontFamilyString != settings.MinorLatinFont ? new XAttribute(W.ascii, fontFamilyString) : null,
-                    fontFamilyString != settings.MajorLatinFont ? new XAttribute(W.hAnsi, fontFamilyString) : null,
-                    new XAttribute(W.cs, fontFamilyString));
+                    SKTypefaceString != settings.MinorLatinFont ? new XAttribute(W.ascii, SKTypefaceString) : null,
+                    SKTypefaceString != settings.MajorLatinFont ? new XAttribute(W.hAnsi, SKTypefaceString) : null,
+                    new XAttribute(W.cs, SKTypefaceString));
             }
 
             // todo I think this puts a color on every element.
@@ -2964,7 +2937,7 @@ namespace OpenXmlPowerTools.HtmlToWml
 
             XElement italic = null;
             XElement italicCs = null;
-            if (iAncestor || emAncestor || fontStyleString == "italic")
+            if (iAncestor || emAncestor || SKFontStyleString == "italic")
             {
                 italic = new XElement(W.i);
                 italicCs = new XElement(W.iCs);
@@ -4129,12 +4102,12 @@ namespace OpenXmlPowerTools.HtmlToWml
             return null;
         }
 
-        private static string GetUsedFontFromFontFamilyProperty(CssExpression fontFamily)
+        private static string GetUsedFontFromSKTypefaceProperty(CssExpression SKTypeface)
         {
-            if (fontFamily == null)
+            if (SKTypeface == null)
                 return null;
-            string fullFontFamily = fontFamily.Terms.Select(t => t + " ").StringConcatenate().Trim();
-            string lcfont = fullFontFamily.ToLower();
+            string fullSKTypeface = SKTypeface.Terms.Select(t => t + " ").StringConcatenate().Trim();
+            string lcfont = fullSKTypeface.ToLower();
             if (InstalledFonts.ContainsKey(lcfont))
                 return InstalledFonts[lcfont];
             return null;

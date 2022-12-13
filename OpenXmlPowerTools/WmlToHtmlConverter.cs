@@ -117,11 +117,11 @@ namespace OpenXmlPowerTools
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class ImageInfo
     {
-        public Bitmap Bitmap;
-        public XAttribute ImgStyleAttribute;
-        public string ContentType;
-        public XElement DrawingElement;
-        public string AltText;
+        public SKBitmap SKBitmap { get; set; }
+        public XAttribute ImgStyleAttribute { get; set; }
+        public string ContentType { get; set; }
+        public XElement DrawingElement { get; set; }
+        public string AltText { get; set; }
 
         public const int EmusPerInch = 914400;
         public const int EmusPerCm = 360000;
@@ -131,13 +131,9 @@ namespace OpenXmlPowerTools
     {
         public static XElement ConvertToHtml(WmlDocument doc, WmlToHtmlConverterSettings htmlConverterSettings)
         {
-            using (OpenXmlMemoryStreamDocument streamDoc = new OpenXmlMemoryStreamDocument(doc))
-            {
-                using (WordprocessingDocument document = streamDoc.GetWordprocessingDocument())
-                {
-                    return ConvertToHtml(document, htmlConverterSettings);
-                }
-            }
+            using var streamDoc = new OpenXmlMemoryStreamDocument(doc);
+            using var document = streamDoc.GetWordprocessingDocument();
+            return ConvertToHtml(document, htmlConverterSettings);
         }
 
         public static XElement ConvertToHtml(WordprocessingDocument wordDoc, WmlToHtmlConverterSettings htmlConverterSettings)
@@ -2236,31 +2232,13 @@ namespace OpenXmlPowerTools
             return tabs;
         }
 
-        private static readonly HashSet<string> UnknownFonts = new HashSet<string>();
-        private static HashSet<string> _knownFamilies;
-
-        private static HashSet<string> KnownFamilies
-        {
-            get
-            {
-                if (_knownFamilies == null)
-                {
-                    _knownFamilies = new HashSet<string>();
-                    var families = FontFamily.Families;
-                    foreach (var fam in families)
-                        _knownFamilies.Add(fam.Name);
-                }
-                return _knownFamilies;
-            }
-        }
-
         private static int CalcWidthOfRunInTwips(XElement r)
         {
             var fontName = (string)r.Attribute(PtOpenXml.pt + "FontName") ??
                            (string)r.Ancestors(W.p).First().Attribute(PtOpenXml.pt + "FontName");
             if (fontName == null)
                 throw new OpenXmlPowerToolsException("Internal Error, should have FontName attribute");
-            if (UnknownFonts.Contains(fontName))
+            if (StaticShared.UnknownFonts.Contains(fontName))
                 return 0;
 
             var rPr = r.Element(W.rPr);
@@ -2270,27 +2248,22 @@ namespace OpenXmlPowerTools
             var sz = GetFontSize(r) ?? 22m;
 
             // unknown font families will throw ArgumentException, in which case just return 0
-            if (!KnownFamilies.Contains(fontName))
+            if (!StaticShared.KnownFamilies.Contains(fontName))
                 return 0;
 
             // in theory, all unknown fonts are found by the above test, but if not...
-            FontFamily ff;
+            SKTypeface ff;
             try
             {
-                ff = new FontFamily(fontName);
+                ff = SKTypeface.FromFamilyName(fontName);
             }
             catch (ArgumentException)
             {
-                UnknownFonts.Add(fontName);
-
+                StaticShared.UnknownFonts.Add(fontName);
                 return 0;
             }
 
-            var fs = FontStyle.Regular;
-            if (GetBoolProp(rPr, W.b) || GetBoolProp(rPr, W.bCs))
-                fs |= FontStyle.Bold;
-            if (GetBoolProp(rPr, W.i) || GetBoolProp(rPr, W.iCs))
-                fs |= FontStyle.Italic;
+            var fs = rPr.GetFontStyle();
 
             // Appended blank as a quick fix to accommodate &nbsp; that will get
             // appended to some layout-critical runs such as list item numbers.
@@ -2323,7 +2296,7 @@ namespace OpenXmlPowerTools
                 multiplier = 6;
             if (multiplier != 1)
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new ();
                 for (int i = 0; i < multiplier; i++)
                     sb.Append(runText);
                 runText = sb.ToString();
@@ -2405,7 +2378,7 @@ namespace OpenXmlPowerTools
                             e.Name == W.yearLong ||
                             e.Name == W.yearShort
                         );
-                    if (hasContent == false)
+                    if (!hasContent)
                         return new XElement(element.Name,
                             element.Attributes(),
                             element.Nodes().Select(n => InsertAppropriateNonbreakingSpacesTransform(n)),
@@ -2421,7 +2394,7 @@ namespace OpenXmlPowerTools
             return node;
         }
 
-        private class SectionAnnotation
+        sealed class SectionAnnotation
         {
             public XElement SectionElement;
         }
@@ -2883,7 +2856,7 @@ namespace OpenXmlPowerTools
             return "#" + color;
         }
 
-        private static readonly Dictionary<string, string> FontFallback = new Dictionary<string, string>()
+        private static readonly Dictionary<string, string> FontFallback = new ()
         {
             { "Arial", @"'{0}', 'sans-serif'" },
             { "Arial Narrow", @"'{0}', 'sans-serif'" },
@@ -2920,9 +2893,9 @@ namespace OpenXmlPowerTools
 
         private static void CreateFontCssProperty(string font, Dictionary<string, string> style)
         {
-            if (FontFallback.ContainsKey(font))
+            if (FontFallback.TryGetValue(font, out string value))
             {
-                style.AddIfMissing("font-family", string.Format(FontFallback[font], font));
+                style.AddIfMissing("font-family", string.Format(value, font));
                 return;
             }
             style.AddIfMissing("font-family", font);
@@ -2973,7 +2946,7 @@ namespace OpenXmlPowerTools
                     var a = parsed.Arguments.Length > 0
                         ? new XElement(Xhtml.a, new XAttribute("href", parsed.Arguments[0]), content)
                         : new XElement(Xhtml.a, content);
-                    var a2 = a as XElement;
+                    var a2 = a;
                     if (!a2.Nodes().Any())
                     {
                         a2.Add(new XText(""));
@@ -3076,49 +3049,47 @@ namespace OpenXmlPowerTools
             if (!ImageContentTypes.Contains(contentType))
                 return null;
 
-            using (var partStream = imagePart.GetStream())
-            using (var bitmap = new Bitmap(partStream))
+            using var partStream = imagePart.GetStream();
+            using var bmp = SKBitmap.Decode(partStream);
+            if (extentCx != null && extentCy != null)
             {
-                if (extentCx != null && extentCy != null)
+                var imageInfo = new ImageInfo()
                 {
-                    var imageInfo = new ImageInfo()
-                    {
-                        Bitmap = bitmap,
-                        ImgStyleAttribute = new XAttribute("style",
-                            string.Format(NumberFormatInfo.InvariantInfo,
-                                "width: {0}in; height: {1}in",
-                                (float)extentCx / (float)ImageInfo.EmusPerInch,
-                                (float)extentCy / (float)ImageInfo.EmusPerInch)),
-                        ContentType = contentType,
-                        DrawingElement = element,
-                        AltText = altText,
-                    };
-                    var imgElement2 = imageHandler(imageInfo);
-                    if (hyperlinkUri != null)
-                    {
-                        return new XElement(XhtmlNoNamespace.a,
-                            new XAttribute(XhtmlNoNamespace.href, hyperlinkUri),
-                            imgElement2);
-                    }
-                    return imgElement2;
-                }
-
-                var imageInfo2 = new ImageInfo()
-                {
-                    Bitmap = bitmap,
+                    SKBitmap = bmp,
+                    ImgStyleAttribute = new XAttribute("style",
+                        string.Format(NumberFormatInfo.InvariantInfo,
+                            "width: {0}in; height: {1}in",
+                            (float)extentCx / (float)ImageInfo.EmusPerInch,
+                            (float)extentCy / (float)ImageInfo.EmusPerInch)),
                     ContentType = contentType,
                     DrawingElement = element,
                     AltText = altText,
                 };
-                var imgElement = imageHandler(imageInfo2);
+                var imgElement2 = imageHandler(imageInfo);
                 if (hyperlinkUri != null)
                 {
                     return new XElement(XhtmlNoNamespace.a,
                         new XAttribute(XhtmlNoNamespace.href, hyperlinkUri),
-                        imgElement);
+                        imgElement2);
                 }
-                return imgElement;
+                return imgElement2;
             }
+
+            var imageInfo2 = new ImageInfo()
+            {
+                SKBitmap = bmp,
+                ContentType = contentType,
+                DrawingElement = element,
+                AltText = altText,
+            };
+            var imgElement = imageHandler(imageInfo2);
+            if (hyperlinkUri != null)
+            {
+                return new XElement(XhtmlNoNamespace.a,
+                    new XAttribute(XhtmlNoNamespace.href, hyperlinkUri),
+                    imgElement);
+            }
+            return imgElement;
         }
 
         private static XElement ProcessPictureOrObject(WordprocessingDocument wordDoc,
@@ -3142,40 +3113,38 @@ namespace OpenXmlPowerTools
                 if (!ImageContentTypes.Contains(contentType))
                     return null;
 
-                using (Stream partStream = imagePart.GetStream())
+                using var partStream = imagePart.GetStream();
+                try
                 {
-                    try
+                    using var bmp = SKBitmap.Decode(partStream);
+                    var imageInfo = new ImageInfo()
                     {
-                        using Bitmap bitmap = new (partStream);
-                        var imageInfo = new ImageInfo()
-                        {
-                            Bitmap = bitmap,
-                            ContentType = contentType,
-                            DrawingElement = element
-                        };
-                        var style = (string)(group ?? element.Elements(VML.shape).FirstOrDefault())?.Attributes("style").FirstOrDefault();
-                        if (style == null) return imageHandler(imageInfo);
+                        SKBitmap = bmp,
+                        ContentType = contentType,
+                        DrawingElement = element
+                    };
+                    var style = (string)(group ?? element.Elements(VML.shape).FirstOrDefault())?.Attributes("style").FirstOrDefault();
+                    if (style == null) return imageHandler(imageInfo);
 
-                        var tokens = style.Split(';');
-                        var widthInPoints = WidthInPoints(tokens);
-                        var heightInPoints = HeightInPoints(tokens);
-                        if (widthInPoints != null && heightInPoints != null)
-                        {
-                            imageInfo.ImgStyleAttribute = new XAttribute("style",
-                                string.Format(NumberFormatInfo.InvariantInfo,
-                                    "width: {0}pt; height: {1}pt", widthInPoints, heightInPoints));
-                        }
-                        return imageHandler(imageInfo);
-                    }
-                    catch (OutOfMemoryException)
+                    var tokens = style.Split(';');
+                    var widthInPoints = WidthInPoints(tokens);
+                    var heightInPoints = HeightInPoints(tokens);
+                    if (widthInPoints != null && heightInPoints != null)
                     {
-                        // the Bitmap class can throw OutOfMemoryException, which means the bitmap is messed up, so punt.
-                        return null;
+                        imageInfo.ImgStyleAttribute = new XAttribute("style",
+                            string.Format(NumberFormatInfo.InvariantInfo,
+                                "width: {0}pt; height: {1}pt", widthInPoints, heightInPoints));
                     }
-                    catch (ArgumentException)
-                    {
-                        return null;
-                    }
+                    return imageHandler(imageInfo);
+                }
+                catch (OutOfMemoryException)
+                {
+                    // the SKBitmap class can throw OutOfMemoryException, which means the SKBitmap is messed up, so punt.
+                    return null;
+                }
+                catch (ArgumentException)
+                {
+                    return null;
                 }
             }
             catch (ArgumentOutOfRangeException)

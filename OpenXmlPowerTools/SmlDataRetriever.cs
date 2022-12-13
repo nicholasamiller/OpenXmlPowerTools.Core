@@ -923,7 +923,7 @@ namespace OpenXmlPowerTools
             "System Background",
         };
 
-        private static string[] FontFamilyList = new string[] {
+        private static string[] SKTypefaceList = new string[] {
             "Not applicable",
             "Roman",
             "Swiss",
@@ -948,10 +948,10 @@ namespace OpenXmlPowerTools
                 var fam = (int?)family.Attribute("val");
                 if (fam != null)
                 {
-                    if (fam < FontFamilyList.Length)
+                    if (fam < SKTypefaceList.Length)
                     {
                         family.Attribute("val").Remove();
-                        family.Add(new XAttribute("val", FontFamilyList[(int)fam]));
+                        family.Add(new XAttribute("val", SKTypefaceList[(int)fam]));
                     }
                 }
             }

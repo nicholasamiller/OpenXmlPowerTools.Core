@@ -5,6 +5,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Text;
 using System.Xml;
@@ -354,7 +355,7 @@ AAsACwDBAgAAbCwAAAAA";
                     if (pageTitle == null)
                         pageTitle = fi.FullName;
 
-                    WmlToHtmlConverterSettings settings = new WmlToHtmlConverterSettings()
+                    WmlToHtmlConverterSettings settings = new()
                     {
                         PageTitle = pageTitle,
                         FabricateCssClasses = true,
@@ -363,52 +364,40 @@ AAsACwDBAgAAbCwAAAAA";
                         RestrictToSupportedNumberingFormats = false,
                         ImageHandler = imageInfo =>
                         {
-                            DirectoryInfo localDirInfo = new DirectoryInfo(imageDirectoryName);
+                            DirectoryInfo localDirInfo = new(imageDirectoryName);
                             if (!localDirInfo.Exists)
                                 localDirInfo.Create();
                             ++imageCounter;
                             string extension = imageInfo.ContentType.Split('/')[1].ToLower();
-                            ImageFormat imageFormat = null;
-                            if (extension == "png")
-                            {
-                                // Convert png to jpeg.
-                                extension = "gif";
-                                imageFormat = ImageFormat.Gif;
-                            }
-                            else if (extension == "gif")
-                                imageFormat = ImageFormat.Gif;
-                            else if (extension == "bmp")
-                                imageFormat = ImageFormat.Bmp;
-                            else if (extension == "jpeg")
-                                imageFormat = ImageFormat.Jpeg;
-                            else if (extension == "tiff")
-                            {
-                                // Convert tiff to gif.
-                                extension = "gif";
-                                imageFormat = ImageFormat.Gif;
-                            }
-                            else if (extension == "x-wmf")
-                            {
-                                extension = "wmf";
-                                imageFormat = ImageFormat.Wmf;
-                            }
 
-                            // If the image format isn't one that we expect, ignore it,
-                            // and don't return markup for the link.
-                            if (imageFormat == null)
-                                return null;
+                            if (extension == "tiff")
+                                extension = "gif";
+                            else if (extension == "x-wmf")
+                                extension = "wmf";
+                            var imageFormat = StaticShared.ParseImageFormat(extension);
 
                             string imageFileName = imageDirectoryName + "/image" +
                                 imageCounter.ToString() + "." + extension;
                             try
                             {
-                                imageInfo.Bitmap.Save(imageFileName, imageFormat);
+                                using var data = imageInfo.SKBitmap.Encode(imageFormat, 100);
+                                if (data == null)
+                                {
+#if DEBUG
+                                    Debug.WriteLine($"Image {imageFileName} not converted!");
+#else
+                                    Console.WriteLine($"Image {imageFileName} not converted!");
+#endif
+                                    return null;
+                                }
+                                using var stream = File.OpenWrite(imageFileName);
+                                data.SaveTo(stream);
                             }
                             catch (System.Runtime.InteropServices.ExternalException)
                             {
                                 return null;
                             }
-                            XElement img = new XElement(Xhtml.img,
+                            XElement img = new(Xhtml.img,
                                 new XAttribute(NoNamespace.src, imageFileName),
                                 imageInfo.ImgStyleAttribute,
                                 imageInfo.AltText != null ?
@@ -433,7 +422,7 @@ AAsACwDBAgAAbCwAAAAA";
         }
     }
 
-    public class ValidationHelper
+    public static class ValidationHelper
     {
         public static bool IsValid(string fileName, string officeVersion)
         {
@@ -460,9 +449,9 @@ AAsACwDBAgAAbCwAAAAA";
             {
                 using (WordprocessingDocument wDoc = WordprocessingDocument.Open(fileName, false))
                 {
-                    OpenXmlValidator validator = new OpenXmlValidator(fileFormatVersion);
+                    OpenXmlValidator validator = new (fileFormatVersion);
                     var errors = validator.Validate(wDoc);
-                    bool valid = errors.Count() == 0;
+                    bool valid = !errors.Any();
                     return valid;
                 }
             }
@@ -470,9 +459,9 @@ AAsACwDBAgAAbCwAAAAA";
             {
                 using (SpreadsheetDocument sDoc = SpreadsheetDocument.Open(fileName, false))
                 {
-                    OpenXmlValidator validator = new OpenXmlValidator(fileFormatVersion);
+                    OpenXmlValidator validator = new (fileFormatVersion);
                     var errors = validator.Validate(sDoc);
-                    bool valid = errors.Count() == 0;
+                    bool valid = !errors.Any();
                     return valid;
                 }
             }
@@ -480,9 +469,9 @@ AAsACwDBAgAAbCwAAAAA";
             {
                 using (PresentationDocument pDoc = PresentationDocument.Open(fileName, false))
                 {
-                    OpenXmlValidator validator = new OpenXmlValidator(fileFormatVersion);
+                    OpenXmlValidator validator = new (fileFormatVersion);
                     var errors = validator.Validate(pDoc);
-                    bool valid = errors.Count() == 0;
+                    bool valid = !errors.Any();
                     return valid;
                 }
             }
@@ -513,8 +502,8 @@ AAsACwDBAgAAbCwAAAAA";
             FileInfo fi = new FileInfo(fileName);
             if (Util.IsWordprocessingML(fi.Extension))
             {
-                WmlDocument wml = new WmlDocument(fileName);
-                using (OpenXmlMemoryStreamDocument streamDoc = new OpenXmlMemoryStreamDocument(wml))
+                WmlDocument wml = new(fileName);
+                using (OpenXmlMemoryStreamDocument streamDoc = new(wml))
                 using (WordprocessingDocument wDoc = streamDoc.GetWordprocessingDocument())
                 {
                     OpenXmlValidator validator = new OpenXmlValidator(fileFormatVersion);
@@ -524,8 +513,8 @@ AAsACwDBAgAAbCwAAAAA";
             }
             else if (Util.IsSpreadsheetML(fi.Extension))
             {
-                SmlDocument Sml = new SmlDocument(fileName);
-                using (OpenXmlMemoryStreamDocument streamDoc = new OpenXmlMemoryStreamDocument(Sml))
+                SmlDocument Sml = new(fileName);
+                using (OpenXmlMemoryStreamDocument streamDoc = new(Sml))
                 using (SpreadsheetDocument wDoc = streamDoc.GetSpreadsheetDocument())
                 {
                     OpenXmlValidator validator = new OpenXmlValidator(fileFormatVersion);
@@ -535,8 +524,8 @@ AAsACwDBAgAAbCwAAAAA";
             }
             else if (Util.IsPresentationML(fi.Extension))
             {
-                PmlDocument Pml = new PmlDocument(fileName);
-                using (OpenXmlMemoryStreamDocument streamDoc = new OpenXmlMemoryStreamDocument(Pml))
+                PmlDocument Pml = new(fileName);
+                using (OpenXmlMemoryStreamDocument streamDoc = new(Pml))
                 using (PresentationDocument wDoc = streamDoc.GetPresentationDocument())
                 {
                     OpenXmlValidator validator = new OpenXmlValidator(fileFormatVersion);
@@ -551,7 +540,6 @@ AAsACwDBAgAAbCwAAAAA";
     public class DocxMetrics
     {
         public string FileName;
-
         public int ActiveX;
         public int AltChunk;
         public int AsciiCharCount;
@@ -592,12 +580,12 @@ AAsACwDBAgAAbCwAAAAA";
     {
         public static DocxMetrics GetDocxMetrics(string fileName)
         {
-            WmlDocument wmlDoc = new WmlDocument(fileName);
-            MetricsGetterSettings settings = new MetricsGetterSettings();
+            WmlDocument wmlDoc = new(fileName);
+            MetricsGetterSettings settings = new();
             settings.IncludeTextInContentControls = false;
             settings.IncludeXlsxTableCellData = false;
             var metricsXml = MetricsGetter.GetDocxMetrics(wmlDoc, settings);
-            DocxMetrics metrics = new DocxMetrics();
+            DocxMetrics metrics = new();
             metrics.FileName = wmlDoc.FileName;
 
             metrics.StyleHierarchy = GetXmlDocumentForMetrics(metricsXml, H.StyleHierarchy);
