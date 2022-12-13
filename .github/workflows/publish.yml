@@ -45,7 +45,10 @@ jobs:
 
 ##    - name: Run tests
 ##      run: dotnet test $SOLUTION --no-build --configuration $BUILD_CONFIG --verbosity minimal
+
+    - name: PublishGit
+      run: dotnet nuget push ./OpenXmlPowerTools/bin/$BUILD_CONFIG/$DLL_NAME.1.0.1.nupkg -s github -k ${{secrets.GIT_NUGET_SECRET}}
       
-    - name: Publish
+    - name: PublishNuget
       if: startsWith(github.ref, 'refs/heads/release')
       run: dotnet nuget push ./OpenXmlPowerTools/bin/$BUILD_CONFIG/$DLL_NAME.$BUILD_VERSION.nupkg -s 'https://api.nuget.org/v3/index.json' -k ${{secrets.NUGET_API_KEY}}
