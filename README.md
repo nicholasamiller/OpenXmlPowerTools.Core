@@ -1,3 +1,11 @@
+OpenXmlPowerTools Content
+===========================
+
+This branch is created to support .net 8.0 and the latest version of DocumentFormat.OpenXml, 3.0.0
+There are multiple breaking changes in DocumentFormat.OpenXml 3.0, which are explained on their package site, and seemed pretty easy to fix.
+I haven't really tested this - but it seems to work for my little project.
+
+
 # OpenXmlPowerTools.NetCore
 
 Actual [Nuget Package](https://www.nuget.org/packages/OpenXmlPowerTools.NetCore)
