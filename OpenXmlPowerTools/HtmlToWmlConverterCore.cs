@@ -2278,7 +2278,7 @@ namespace OpenXmlPowerTools.HtmlToWml
 
             MainDocumentPart mdp = wDoc.MainDocumentPart;
             string rId = "R" + Guid.NewGuid().ToString().Replace("-", "");
-            ImagePartType ipt = ImagePartType.Png;
+            PartTypeInfo ipt = ImagePartType.Png;
             ImagePart newPart = mdp.AddImagePart(ipt, rId);
             using var stream = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
             stream.Write(ba, 0, ba.GetUpperBound(0) + 1);
