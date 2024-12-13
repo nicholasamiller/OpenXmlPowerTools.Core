@@ -96,11 +96,12 @@ namespace OpenXmlPowerTools
         {
             try
             {
-                var fs = SKFontManager.Default.MatchTypeface(face, style);
-                var font = new SKFont(fs, (float)sz / 2f);
-                var textPaint = new SKPaint(font);
+                //var fs = SKFontManager.Default..MatchTypeface(face, style);
+                var font = new SKFont(face, (float)sz / 2f);
                 SKRect textBounds = new ();
-                textPaint.MeasureText(text, ref textBounds);
+                font.MeasureText(text, out textBounds);
+                //var textPaint = new SKPaint(font);
+                //textPaint.MeasureText(text, ref textBounds);
                 return (int)Math.Floor(textBounds.Size.Width);                
             }
             catch
