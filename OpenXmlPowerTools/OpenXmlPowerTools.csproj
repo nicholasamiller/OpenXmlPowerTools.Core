@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<NoWarn>CA1416</NoWarn>
+        <NoWarn>$(NoWarn);OOXML0001</NoWarn> <!--Experimental API in OpenXML-->
+        <NoWarn>$(NoWarn);CA2200</NoWarn> <!--Rethrow changes stack information-->
 		<TargetFrameworks>net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Authors>Microsoft, Eric White, Lionel Vallet, Alexander Solovey</Authors>
@@ -12,10 +14,8 @@
 		<PackageProjectUrl>https://github.com/sawcheg/OpenXmlPowerTools.NetCore</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Description>
-			Based on maintainer Lionel Vallet's vNext fork, includes .NET 6.0 and .NET 7.0 build target for use in cross-platform scenarios.
-			
-			For compatibility with .NET 7.0, the System.Drawing.Common library was replaced with the cross-platform SkiaSharp library.
-
+			For of OpenXml to to work with .NET 8.0.  Also currently being used with .NET 9. without issue.
+            
 			The Open XML PowerTools provides guidance and example code for programming with Open XML Documents (DOCX, XLSX, and PPTX). It is based on, and extends the functionality of the Open XML SDK.
 
 			It supports scenarios such as:
