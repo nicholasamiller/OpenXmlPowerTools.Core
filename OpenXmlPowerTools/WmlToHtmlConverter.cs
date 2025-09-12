@@ -152,7 +152,7 @@ namespace OpenXmlPowerTools
                 RemoveSmartTags = true,
                 RemoveSoftHyphens = true,
                 RemoveGoBackBookmark = true,
-                ReplaceTabsWithSpaces = false,
+                ReplaceTabsWithSpaces = false, 
             };
             MarkupSimplifier.SimplifyMarkup(wordDoc, simplifyMarkupSettings);
 
@@ -1088,6 +1088,11 @@ namespace OpenXmlPowerTools
                 txElementsPrecedingTab,
                 ConvertContentThatCanContainFields(wordDoc, settings, elementsSucceedingTab));
             paraElement.AddAnnotation(style);
+            
+            // ADD: expose the Word paragraph style on the <p> element
+            var styleName = (string)paragraph.Attribute(PtOpenXml.StyleName);
+            if (elementName == Xhtml.p && !string.IsNullOrEmpty(styleName))
+                paraElement.SetAttributeValue("data-w-style", styleName);
 
             return paraElement;
         }
