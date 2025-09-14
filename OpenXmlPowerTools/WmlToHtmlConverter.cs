@@ -1090,10 +1090,23 @@ namespace OpenXmlPowerTools
             paraElement.AddAnnotation(style);
             
             // ADD: expose the Word paragraph style on the <p> element
-            var styleName = (string)paragraph.Attribute(PtOpenXml.StyleName);
+            var styleName =  (string)paragraph
+                .Elements(W.pPr)
+                .Elements(W.pStyle)
+                .Attributes(W.val)
+                .FirstOrDefault();
             if (elementName == Xhtml.p && !string.IsNullOrEmpty(styleName))
                 paraElement.SetAttributeValue("data-w-style", styleName);
-
+            
+            
+            
+            // ADD: expose the Word paragraph id (w14:paraId) on the <p> element
+            
+            if (paragraph.Attribute("data-w-paraId") != null)
+            {
+                paraElement.SetAttributeValue("data-w-paraId", paragraph.Attribute("data-w-paraId").Value);
+            }
+            
             return paraElement;
         }
 

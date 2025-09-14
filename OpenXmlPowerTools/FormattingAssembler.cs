@@ -620,6 +620,10 @@ namespace OpenXmlPowerTools
                             listItemRun,
                             tabRun,
                             element.Elements().Where(e => e.Name != W.pPr).Select(n => NormalizeListItemsTransform(fai, wDoc, n, settings)));
+                        
+                        if (element.Attribute(W14.paraId) != null)
+                            newPara.Add(new XAttribute("data-w-paraId", (string)element.Attribute(W14.paraId)));
+                        
                         return newPara;
 
                     }
