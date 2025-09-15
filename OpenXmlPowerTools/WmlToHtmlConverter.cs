@@ -1420,6 +1420,13 @@ namespace OpenXmlPowerTools
                 xe.AddAnnotation(style);
                 content = xe;
             }
+            // Add any pt14:ListItemRun= data from the run to the span
+            var listItemRun = (string)run.Attribute(PtOpenXml.ListItemRun);
+            if (listItemRun != null && content is XElement)
+            {
+                ((XElement)content).SetAttributeValue("data-w-listItemRun", listItemRun);
+            }
+            
             return content;
         }
 
